@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dealership Map</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <style>
+        #map { 
+            height: 600px; 
+            width: 100%; 
+        }
+        #controls { 
+            margin: 10px 0; 
+        }
+        select { 
+            padding: 5px; 
+            font-size: 16px; 
+        }
+        button {
+            padding: 5px 10px;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        #route-info {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="ownerFilter">Filter by Account Owner: </label>
+        <select id="ownerFilter">
+            <option value="All">All</option>
+            <option value="Rachel Shifflett-Engler">Rachel Shifflett-Engler</option>
+            <option value="Aram Takvoryan">Aram Takvoryan</option>
+            <option value="David Savine">David Savine</option>
+            <option value="Shane Marshall">Shane Marshall</option>
+            <option value="Timothy Hood">Timothy Hood</option>
+            <option value="Glenny Martinez">Glenny Martinez</option>
+            <option value="Sandra Snyder">Sandra Snyder</option>
+        </select>
+    </div>
+    <div id="map"></div>
+    <div id="route-info"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine JS -->
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([39.0, -76.0], 7); // Centered on Maryland/Virginia area
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Dealership data with Account Owner
+        var dealerships = [
+            { name: "NISSAN OF LEXINGTON PARK", address: "22757 Three Notch Road, California, Maryland 20619", lat: 38.291793, lng: -76.496049, owner: "Rachel Shifflett-Engler" },
+            { name: "BATTLES BUICK GMC /SA10018", address: "60 MACARTHUR BLVD, BOURNE, Massachusetts 2532", lat: 41.738825, lng: -70.586211, owner: "Aram Takvoryan" },
+            { name: "NORTHSTAR KIA /SA10058", address: "4605 NORTHERN BLVD, LONG IS CITY, New York 11101", lat: 40.754106, lng: -73.916054, owner: "Shane Marshall" },
+            { name: "TODD MASERATI ALFA ROMEO OF DANBURY /SB30019", address: "52 NEWTOWN ROAD, DANBURY, Connecticut 6810", lat: 41.404231, lng: -73.423698, owner: "Glenny Martinez" },
+            { name: "WINCHESTER MITSUBISHI 9603/SM46085", address: "3880 VALLEY PIKE, WINCHESTER, Virginia 22602", lat: 39.120142, lng: -78.197755, owner: "Rachel Shifflett-Engler" },
+            { name: "BERLIN CITY NIS PORTLAND", address: "191 RIVERSIDE STREET, PORTLAND, Maine 4103", lat: 43.683172, lng: -70.325518, owner: "Aram Takvoryan" },
+            { name: "MIKE BARNEY NISSAN", address: "3676 SHERIDAN DR, AMHERST, New York 14226", lat: 42.979991, lng: -78.797258, owner: "David Savine" },
+            { name: "LIA NISSAN", address: "2233 CENTRAL AVE, SCHENECTADY, New York 12304", lat: 42.764563, lng: -73.88515, owner: "David Savine" },
+            { name: "POHANKA NISSAN", address: "PO BOX 389, FREDERICKSBURG, Virginia 22404", lat: 38.295135, lng: -77.483689, owner: "Rachel Shifflett-Engler" },
+            { name: "PETER'S NISSAN OF NASHUA", address: "280 AMHERST ST, NASHUA, New Hampshire 3063", lat: 42.779215, lng: -71.498983, owner: "Aram Takvoryan" },
+            { name: "DARLING'S NISSAN", address: "114 SYLVAN RD, BANGOR, Maine 4401", lat: 44.827472, lng: -68.745406, owner: "Aram Takvoryan" },
+            { name: "HARTE NISSAN, INC. 2148", address: "165 W SERVICE RD, HARTFORD, Connecticut 6120", lat: 41.791421, lng: -72.656637, owner: "Aram Takvoryan" },
+            { name: "KOEPPEL NISSAN INC", address: "PO BOX 720218, JACKSON HEIGHTS, New York 11372", lat: 40.751146, lng: -73.882508, owner: "Shane Marshall" },
+            { name: "D'ADDARIO NISSAN 2178", address: "329 BRIDGEPORT AVE, SHELTON, Connecticut 6484", lat: 41.299106, lng: -73.106602, owner: "Aram Takvoryan" },
+            { name: "NISSAN 112 SALES CORP", address: "730 ROUTE 112, PATCHOGUE, New York 11772", lat: 40.793089, lng: -73.007599, owner: "Shane Marshall" },
+            { name: "CHERRY HILL NISSAN, INC.", address: "2325 ROUTE 38, CHERRY HILL, New Jersey 8002", lat: 39.939526, lng: -75.011972, owner: "Timothy Hood" },
+            { name: "PINE BELT AUTOMOTIVE, INC", address: "PO BOX 309, TOMS RIVER, New Jersey 8754", lat: 39.979031, lng: -74.160429, owner: "Sandra Snyder" },
+            { name: "BARON NISSAN, INC.", address: "235 GLEN COVE RD, GREENVALE, New York 11548", lat: 40.817395, lng: -73.62609, owner: "Shane Marshall" },
+            { name: "O'NEIL NISSAN INC.", address: "849 W STREET RD, WARMINSTER, Pennsylvania 18974", lat: 40.210804, lng: -75.105351, owner: "Timothy Hood" },
+            { name: "SHULTS NISSAN SUBARU", address: "311 FLUVANNA AVENUE, JAMESTOWN, New York 14701", lat: 42.1156, lng: -79.253708, owner: "David Savine" },
+            { name: "BRUCE BENNETT NISSAN 2620", address: "978 DANBURY RD, WILTON, Connecticut 6897", lat: 41.260497, lng: -73.435283, owner: "Aram Takvoryan" },
+            { name: "LEBRUN NISSAN", address: "396 GRANT AVE, AUBURN, New York 13021", lat: 42.967158, lng: -76.536192, owner: "David Savine" },
+            { name: "FREEDOM NISSAN, INC.", address: "1095 SHELBURNE ROAD, SOUTH BURLINGTON, Vermont 5403", lat: 44.43866, lng: -73.211077, owner: "David Savine" },
+            { name: "BOB BELL CHEVROLET/NISSAN", address: "7900 EASTERN AVE, BALTIMORE, Maryland 21224", lat: 39.29666, lng: -76.509134, owner: "Rachel Shifflett-Engler" },
+            { name: "TEAM NISSAN, INC.", address: "PO BOX 2429, VINELAND, New Jersey 8362", lat: 39.495524, lng: -75.008665, owner: "Timothy Hood" },
+            { name: "PORT CITY NISSAN, INC.", address: "120 SPAULDING TURNPIKE, PORTSMOUTH, New Hampshire 3801", lat: 43.077176, lng: -70.785076, owner: "Aram Takvoryan" },
+            { name: "CHARLIE'S NISSAN", address: "465 WESTERN AVE, AUGUSTA, Maine 4330", lat: 44.320655, lng: -69.822292, owner: "Aram Takvoryan" },
+            { name: "SULLIVAN BROS. NISSAN INC", address: "1 CRANBERRY RD, KINGSTON, Massachusetts 2364", lat: 41.976651, lng: -70.711916, owner: "Aram Takvoryan" },
+            { name: "CONCORDVILLE NISSAN", address: "PO BOX 188, CONCORDVILLE, Pennsylvania 19331", lat: 39.882274, lng: -75.516529, owner: "Timothy Hood" },
+            { name: "TEAM NISSAN, INC.", address: "70 KELLER STREET, MANCHESTER, New Hampshire 3103", lat: 42.952989, lng: -71.442584, owner: "Aram Takvoryan" },
+            { name: "LEE NISSAN OF AUBURN", address: "793 CENTER ST, AUBURN, Maine 4212", lat: 44.12932, lng: -70.223926, owner: "Sandra Snyder" },
+            { name: "PERUZZI NISSAN, INC.", address: "165 LINCOLN HWY, FAIRLESS HILLS, Pennsylvania 19030", lat: 40.183221, lng: -74.862174, owner: "Timothy Hood" },
+            { name: "STAR NISSAN, INC.", address: "20626 NORTHERN BLVD, BAYSIDE, New York 11361", lat: 40.758299, lng: -73.776397, owner: "Shane Marshall" },
+            { name: "HERTRICH NISSAN JP-EAGLE 2979", address: "1378 S DUPONT HWY, DOVER, Delaware 19901", lat: 39.136508, lng: -75.527262, owner: "Timothy Hood" },
+            { name: "GROSSMAN CHEV-NISSAN-GEO", address: "295 MIDDLESEX TPKE, OLD SAYBROOK, Connecticut 6475", lat: 41.309378, lng: -72.38324, owner: "Sandra Snyder" },
+            { name: "SHEEHY NISSAN OF MANASSAS", address: "9010 Liberia Avenue, Manassas, Virginia 20110", lat: 38.760505, lng: -77.459161, owner: "Rachel Shifflett-Engler" },
+            { name: "GEORGE HARTE NISSAN, INC. 3033", address: "426 DERBY AVE, WEST HAVEN, Connecticut 6516", lat: 41.30748, lng: -72.968258, owner: "Aram Takvoryan" },
+            { name: "RAMSEY NISSAN, INC.", address: "P.O. BOX 510, RAMSEY, New Jersey 7446", lat: 41.059124, lng: -74.133441, owner: "Glenny Martinez" },
+            { name: "PASSPORT NIS/MARLOW HGTS", address: "5000 AUTH WAY, MARLOW HEIGHTS, Maryland 20746", lat: 38.826983, lng: -76.923503, owner: "Rachel Shifflett-Engler" },
+            { name: "NISSAN OF TURNERSVILLE", address: "PO BOX 9070, TURNERSVILLE, New Jersey 8012", lat: 39.77317, lng: -75.051281, owner: "Timothy Hood" },
+            { name: "GATES NISSAN 3063", address: "PO BOX 130, NORTH WINDHAM, Connecticut 6256", lat: 41.74954, lng: -72.15452, owner: "Aram Takvoryan" },
+            { name: "HILLTOP NISSAN, INC.", address: "258 ROUTE 10, EAST HANOVER, New Jersey 7936", lat: 40.807225, lng: -74.371319, owner: "Glenny Martinez" },
+            { name: "CONICELLI NISSAN", address: "1222 W. RIDGE PIKE, CONSHOHOCKEN, Pennsylvania 19428", lat: 40.103569, lng: -75.310877, owner: "Timothy Hood" },
+            { name: "HUDSON NISSAN", address: "P.O. BOX 11560, NEW BRUNSWICK, New Jersey 8906", lat: 40.486754, lng: -74.444395, owner: "Glenny Martinez" },
+            { name: "TIMBROOK NISSAN", address: "PO BOX 1682, CUMBERLAND, Maryland 21501", lat: 39.580691, lng: -78.690593, owner: "Sandra Snyder" },
+            { name: "ROCKLAND NISSAN 3207", address: "608 ROUTE 303, BLAUVELT, New York 10913", lat: 41.071018, lng: -73.951083, owner: "Glenny Martinez" },
+            { name: "RIVERHEAD AUTO MALL, LTD.", address: "1800 OLD COUNTRY RD, RIVERHEAD, New York 11901", lat: 40.924229, lng: -72.704785, owner: "Shane Marshall" },
+            { name: "MARC MOTORS, INC.", address: "1744 MAIN ST, SANFORD, Maine 4073", lat: 43.403359, lng: -70.717896, owner: "Aram Takvoryan" },
+            { name: "LIA NISSAN OF ENFIELD", address: "PO BOX 1124, ENFIELD, Connecticut 6083", lat: 41.984646, lng: -72.557731, owner: "David Savine" },
+            { name: "PINE BELT NISSAN/KEYPORT", address: "111 STATE ROUTE 36, KEYPORT, New Jersey 7735", lat: 40.426642, lng: -74.199679, owner: "Sandra Snyder" },
+            { name: "PAUL MILLER NISSAN, LLC 3265", address: "930 KINGS HWY E, FAIRFIELD, Connecticut 6825", lat: 41.167258, lng: -73.233436, owner: "Aram Takvoryan" },
+            { name: "RON BOUCHARD NISSAN", address: "490 OLD UNION TURN PIKE, LANCASTER, Massachusetts 1523", lat: 42.519411, lng: -71.700761, owner: "Aram Takvoryan" },
+            { name: "SHERIDAN NISSAN, L.L.C.", address: "114 S DUPONT HWY, NEW CASTLE, Delaware 19720", lat: 39.663534, lng: -75.605012, owner: "Timothy Hood" },
+            { name: "KELLY NISSAN OF LYNNFIELD", address: "271-275 BROADWAY, LYNNFIELD, Massachusetts 1940", lat: 42.510039, lng: -71.008848, owner: "Aram Takvoryan" },
+            { name: "NISSAN OF MIDDLETOWN 3367", address: "P.O. BOX 549, NEW HAMPTON, New York 10958", lat: 41.375634, lng: -74.43375, owner: "Glenny Martinez" },
+            { name: "MARLBORO NISSAN", address: "740 BOSTON POST ROAD, MARLBOROUGH, Massachusetts 1752", lat: 42.351399, lng: -71.50072, owner: "Aram Takvoryan" },
+            { name: "QUIRK NISSAN, INC.", address: "PO BOX 690535, QUINCY, Massachusetts 2269", lat: 42.241799, lng: -71.006042, owner: "Aram Takvoryan" },
+            { name: "EXECUTIVE NISSAN 3422", address: "900 UNIVERSAL DR N, NORTH HAVEN, Connecticut 6473", lat: 41.367288, lng: -72.871786, owner: "Aram Takvoryan" },
+            { name: "SHEEHY NISSAN", address: "7232 Ritchie Highway, Glen Burnie, Maryland 21061", lat: 39.172828, lng: -76.619631, owner: "Rachel Shifflett-Engler" },
+            { name: "COUNTRY NISSAN", address: "PO BOX 547, HADLEY, Massachusetts 1035", lat: 42.356804, lng: -72.576613, owner: "Aram Takvoryan" },
+            { name: "MONTGOMERYVILLE NISSAN", address: "ROUTE 309 AT STUMP ROAD, MONTGOMERYVILLE, Pennsylvania 18936", lat: 40.226105, lng: -75.231236, owner: "Timothy Hood" },
+            { name: "PASSPORT NIS/ALEXANDRIA", address: "150 South Pickett Street, Alexandria, Virginia 22304", lat: 38.809683, lng: -77.122194, owner: "Rachel Shifflett-Engler" },
+            { name: "NISSAN 46", address: "1655 RT 46 EAST, LITTLE FALLS, New Jersey 7424", lat: 40.885006, lng: -74.216308, owner: "Glenny Martinez" },
+            { name: "BURDICK NISSAN 3558", address: "5885 E CIRCLE DR, CICERO, New York 13039", lat: 43.149771, lng: -76.113637, owner: "David Savine" },
+            { name: "POHANKA NISSAN/SALISBURY", address: "2012 N SALISBURY BLVD, SALISBURY, Maryland 21801", lat: 38.392047, lng: -75.57591, owner: "Rachel Shifflett-Engler" },
+            { name: "ROYAL NISSAN-SUBARU", address: "3901 ROUTE 281, CORTLAND, New York 13045", lat: 42.596021, lng: -76.206967, owner: "David Savine" },
+            { name: "BALISE NIS W SPRINGFIELD", address: "500 RIVERDALE ST, WEST SPRINGFIELD, Massachusetts 1089", lat: 42.119728, lng: -72.626524, owner: "Aram Takvoryan" },
+            { name: "NISSAN OF NORWICH 3664", address: "691 W THAMES ST, NORWICH, Connecticut 6360", lat: 41.498578, lng: -72.098217, owner: "Aram Takvoryan" },
+            { name: "LEGEND NISSAN, LTD", address: "268 JERICHO TPKE, SYOSSET, New York 11791", lat: 40.809799, lng: -73.507892, owner: "Shane Marshall" },
+            { name: "SOMERSWORTH NISSAN", address: "285 ROUTE 108, SOMERSWORTH, New Hampshire 3878", lat: 43.257401, lng: -70.90051, owner: "Aram Takvoryan" },
+            { name: "DAVIDSON NISSAN, INC.", address: "PO BOX 320, WATERTOWN, New York 13601", lat: 43.968892, lng: -75.906501, owner: "Sandra Snyder" },
+            { name: "MAGUIRE NISSAN", address: "17 UPTOWN ROAD, ITHACA, New York 14850", lat: 42.481109, lng: -76.473009, owner: "Sandra Snyder" },
+            { name: "SANSONE JR'S WINDSOR NISS", address: "PO BOX 1387, EAST WINDSOR, New Jersey 8520", lat: 40.242313, lng: -74.578709, owner: "Glenny Martinez" },
+            { name: "COASTAL NISSAN", address: "109 ACCORD PARK DR, NORWELL, Massachusetts 2061", lat: 42.165388, lng: -70.887773, owner: "Aram Takvoryan" },
+            { name: "DARCARS NISSAN", address: "15911 INDIANOLA DR, ROCKVILLE, Maryland 20855", lat: 39.114646, lng: -77.16124, owner: "Rachel Shifflett-Engler" },
+            { name: "CROWLEY NISSAN 3784", address: "1451 FARMINGTON AVE, BRISTOL, Connecticut 6010", lat: 41.699592, lng: -72.894572, owner: "Glenny Martinez" },
+            { name: "ANTWERPEN NISSAN, INC.", address: "12451 AUTO DR, CLARKSVILLE, Maryland 21029", lat: 39.21297, lng: -76.944371, owner: "Rachel Shifflett-Engler" },
+            { name: "NISSAN OF QUEENS", address: "250 NORTHERN BLVD, GREAT NECK, New York 11021", lat: 40.776841, lng: -73.727343, owner: "Shane Marshall" },
+            { name: "WEST-HERR NISSAN 2965/3820", address: "3580 SOUTHWESTERN BLVD, ORCHARD PARK, New York 14127", lat: 42.785182, lng: -78.765541, owner: "David Savine" },
+            { name: "PRESTON NISSAN", address: "PO BOX 489, PRESTON, Maryland 21655", lat: 38.752146, lng: -75.90765, owner: "Rachel Shifflett-Engler" },
+            { name: "SHEEHY NISSAN OF WALDORF", address: "2950 Crain Highway, Waldorf, Maryland 20601", lat: 38.629905, lng: -76.905368, owner: "Rachel Shifflett-Engler" },
+            { name: "COLONIAL NISSAN/MEDFORD", address: "104 MYSTIC AVE, MEDFORD, Massachusetts 2155", lat: 42.412452, lng: -71.106624, owner: "Aram Takvoryan" },
+            { name: "CENTRAL AVENUE NISSAN INC", address: "1919 CENTRAL PARK AVE, YONKERS, New York 10710", lat: 40.964528, lng: -73.84033, owner: "Glenny Martinez" },
+            { name: "YOUNGER NISSAN/FREDERICK", address: "7418 GROVE ROAD, FREDERICK, Maryland 21704", lat: 39.391157, lng: -77.40777, owner: "Rachel Shifflett-Engler" },
+            { name: "ANTWERPEN NISSAN- SECURITY", address: "PO BOX 31790, BALTIMORE, Maryland 21207", lat: 39.332607, lng: -76.692749, owner: "Rachel Shifflett-Engler" },
+            { name: "MASTRIA NISSAN, INC.", address: "1305 NEW STATE HWY, RAYNHAM, Massachusetts 2767", lat: 41.903823, lng: -71.01751, owner: "Aram Takvoryan" },
+            { name: "CHAPMAN NISSAN LLC", address: "6723 ESSINGTON AVE, PHILADELPHIA, Pennsylvania 19153", lat: 39.910652, lng: -75.224237, owner: "Timothy Hood" },
+            { name: "FRED BEANS NISSAN OF DOYLESTOWN 3204/5053", address: "4469 W SWAMP ROAD, DOYLESTOWN, Pennsylvania 18901", lat: 40.333817, lng: -75.138628, owner: "Timothy Hood" },
+            { name: "BALISE NISSAN", address: "1350 POST RD, WARWICK, Rhode Island 2888", lat: 41.742728, lng: -71.428648, owner: "Aram Takvoryan" },
+            { name: "DARCARS NISSAN/COLLEGE PK", address: "9330 BALTIMORE AVE., COLLEGE PARK, Maryland 20740", lat: 39.008101, lng: -76.930091, owner: "Rachel Shifflett-Engler" },
+            { name: "HOFFMAN NISSAN", address: "P.O. BOX 579, WEST SIMSBURY, Connecticut 6092", lat: 41.865597, lng: -72.849854, owner: "Sandra Snyder" },
+            { name: "CAUSEWAY NISSAN LLC", address: "435 ROUTE 72 WEST, MANAHAWKIN, New Jersey 8050", lat: 39.699247, lng: -74.267409, owner: "Timothy Hood" },
+            { name: "CONCORD NISSAN, INC.", address: "175 MANCHESTER ST, CONCORD, New Hampshire 3301", lat: 43.187899, lng: -71.497552, owner: "Aram Takvoryan" },
+            { name: "BERLIN CITY NISSAN", address: "485 MAIN ST, GORHAM, New Hampshire 3581", lat: 44.413815, lng: -71.195499, owner: "Aram Takvoryan" },
+            { name: "KELLY NISSAN", address: "3830 EASTON NAZARETH HWY, EASTON, Pennsylvania 18045", lat: 40.720506, lng: -75.289984, owner: "Timothy Hood" },
+            { name: "BERTERA NISSAN, INC.", address: "569 OXFORD ST S, AUBURN, Massachusetts 1501", lat: 42.182824, lng: -71.850462, owner: "Aram Takvoryan" },
+            { name: "SIMMONS ROCKWELL NISSAN", address: "224 COLONIAL DRIVE, HORSEHEADS, New York 14845", lat: 42.162647, lng: -76.86751, owner: "David Savine" },
+            { name: "CRISWELL NISSAN", address: "19574 AMARANTH DR, GERMANTOWN, Maryland 20874", lat: 39.177422, lng: -77.249601, owner: "Rachel Shifflett-Engler" },
+            { name: "FORMULA NISSAN", address: "1504 US ROUTE 302, BARRE, Vermont 5641", lat: 44.230421, lng: -72.552051, owner: "David Savine" },
+            { name: "FAULKNER NISSAN", address: "900 OLD YORK ROAD, JENKINTOWN, Pennsylvania 19046", lat: 40.107279, lng: -75.123932, owner: "Timothy Hood" },
+            { name: "COUNTRY CLUB NISSAN", address: "55 ONEIDA STREET, ONEONTA, New York 13820", lat: 42.451587, lng: -75.09993, owner: "David Savine" },
+            { name: "NISSAN 24", address: "1016 BELMONT ST, BROCKTON, Massachusetts 2301", lat: 42.062464, lng: -71.058069, owner: "Aram Takvoryan" },
+            { name: "SANSONE JR'S 66 NISSAN", address: "3401 ROUTE 66, NEPTUNE, New Jersey 7753", lat: 40.228722, lng: -74.068561, owner: "Glenny Martinez" },
+            { name: "ANCHOR NISSAN", address: "1041 EDDIE DOWLING HWY, NORTH SMITHFIELD, Rhode Island 2896", lat: 41.960738, lng: -71.494802, owner: "Aram Takvoryan" },
+            { name: "BUSH NISSAN OF EXTON", address: "200 WEST LINCOLN HIGHWAY, EXTON, Pennsylvania 19341", lat: 40.026489, lng: -75.634274, owner: "Timothy Hood" },
+            { name: "CURRY NISSAN CHICOPEE", address: "765 MEMORIAL DRIVE, CHICOPEE, Massachusetts 1020", lat: 42.178778, lng: -72.576131, owner: "Aram Takvoryan" },
+            { name: "COMMONWEALTH NISSAN", address: "ONE COMMONWEALTH DRIVE, LAWRENCE, Massachusetts 1841", lat: 42.71514, lng: -71.139163, owner: "Aram Takvoryan" },
+            { name: "LEE NISSAN OF TOPSHAM", address: "107 MAIN STREET, TOPSHAM, Maine 4086", lat: 43.936593, lng: -69.965604, owner: "Sandra Snyder" },
+            { name: "MILFORD NISSAN", address: "320 EAST MAIN STREET, MILFORD, Massachusetts 1757", lat: 42.151918, lng: -71.495358, owner: "Aram Takvoryan" },
+            { name: "NISSAN OF HUNTINGTON 3495/5326", address: "850 E. JERICHO TURNPIKE, HUNTINGTON STATION, New York 11746", lat: 40.83414, lng: -73.379985, owner: "Shane Marshall" },
+            { name: "EDISON NISSAN", address: "401 U.S. ROUTE 1, EDISON, New Jersey 8817", lat: 40.503637, lng: -74.401197, owner: "Glenny Martinez" },
+            { name: "KELLY NISSAN OF WOBURN", address: "95 CEDAR ST, WOBURN, Massachusetts 1801", lat: 42.498516, lng: -71.121513, owner: "Aram Takvoryan" },
+            { name: "DESTINATION NISSAN", address: "770 CENTRAL AVENUE, ALBANY, New York 12206", lat: 42.677005, lng: -73.787219, owner: "David Savine" },
+            { name: "BILL DODGE NISSAN OF SACO", address: "PO BOX 9567, WESTBROOK, Maine 4098", lat: 43.707947, lng: -70.352614, owner: "Aram Takvoryan" },
+            { name: "LIA NISSAN OF SARATOGA", address: "2906 ROUTE 9, MALTA, New York 12020", lat: 43.018112, lng: -73.792091, owner: "David Savine" },
+            { name: "NISSAN OF NEW ROCHELLE", address: "2533 PALMER AVE, NEW ROCHELLE, New York 10801", lat: 40.919361, lng: -73.776966, owner: "Glenny Martinez" },
+            { name: "NISSAN 422 OF LIMERICK", address: "55 AUTOPARK BLVD, LIMERICK, Pennsylvania 19468", lat: 40.21746, lng: -75.548074, owner: "Timothy Hood" },
+            { name: "ROUTE 33 NISSAN", address: "951 US HWY 33, HAMILTON SQUARE, New Jersey 8690", lat: 40.22904, lng: -74.672296, owner: "Glenny Martinez" },
+            { name: "PRIORITY NISSAN CHANTILLY", address: "14840 Stonecroft Center Court, Chantilly, Virginia 20151", lat: 38.89981, lng: -77.460338, owner: "Rachel Shifflett-Engler" },
+            { name: "GARVEY NISSAN", address: "2201 ROUTE 7 NORTH, RUTLAND, Vermont 5701", lat: 43.655276, lng: -72.987456, owner: "David Savine" },
+            { name: "ANTWERPEN NISSAN - OWINGS MILLS", address: "11405 REISTERSTOWN RD, OWINGS MILLS, Maryland 21117", lat: 39.438663, lng: -76.802583, owner: "Rachel Shifflett-Engler" },
+            { name: "MIDDLETOWN NISSAN 5492", address: "1153 NEWFIELD ST, MIDDLETOWN, Connecticut 6457", lat: 41.590437, lng: -72.676432, owner: "Aram Takvoryan" },
+            { name: "WEST HERR NISSAN OF LOCKPORT 3064/5498", address: "6069 S TRANSIT RD, LOCKPORT, New York 14094", lat: 43.128535, lng: -78.696101, owner: "David Savine" },
+            { name: "WEST HERR NISSAN WILLIAMSVILLE 3691/5508", address: "8137 MAIN ST, WILLIAMSVILLE, New York 14221", lat: 42.962693, lng: -78.691464, owner: "David Savine" },
+            { name: "THRUWAY NISSAN 5512", address: "79 ROUTE 17K, NEWBURGH, New York 12550", lat: 41.499663, lng: -74.009671, owner: "Glenny Martinez" },
+            { name: "HUTTIG NISSAN 3697/5518", address: "822 STATE ROUTE 3, PLATTSBURGH, New York 12901", lat: 44.696449, lng: -73.527455, owner: "David Savine" },
+            { name: "NISSAN OF STATEN ISLAND", address: "1976 HYLAN BLVD, STATEN ISLAND, New York 10306", lat: 40.581377, lng: -74.097758, owner: "Shane Marshall" },
+            { name: "MAGUIRE NISSAN / SYRACUSE", address: "716 W GENESSEE, SYRACUSE, New York 13206", lat: 43.053818, lng: -76.16397, owner: "Sandra Snyder" },
+            { name: "LIA NISSAN OF GLENS FALLS", address: "373 DIX AVENUE, QUEENSBURY, New York 12804", lat: 43.315875, lng: -73.608574, owner: "David Savine" },
+            { name: "LANGWAY NISSAN OF NEWPORT", address: "295 EAST MAIN ROAD, MIDDLETOWN, Rhode Island 2842", lat: 41.518796, lng: -71.291125, owner: "Sandra Snyder" },
+            { name: "TREIBER NISSAN", address: "320 N COMRIE AVE, JOHNSTOWN, New York 12095", lat: 43.024936, lng: -74.358266, owner: "David Savine" },
+            { name: "STATELINE NISSAN", address: "845 TAUNTON AVENUE, EAST PROVIDENCE, Rhode Island 2914", lat: 41.822338, lng: -71.348984, owner: "Aram Takvoryan" },
+            { name: "REEDMAN TOLL NIS DRE HILL", address: "5018 TOWNSHIP LINE RD, DREXEL HILL, Pennsylvania 19026", lat: 39.955621, lng: -75.321566, owner: "Timothy Hood" },
+            { name: "MOUNT HOLLY NISSAN, INC.", address: "1513 ROUTE 38, HAINESPORT, New Jersey 8036", lat: 39.982585, lng: -74.808775, owner: "Timothy Hood" },
+            { name: "NUCAR NISSAN OF NORWOOD", address: "525 BOSTON PROVIDENCE TP, NORWOOD, Massachusetts 2062", lat: 42.192074, lng: -71.184882, owner: "Aram Takvoryan" },
+            { name: "NUCAR NISSAN NO ATTLEBORO", address: "685 SOUTH WASHINGTON ST, NORTH ATTLEBORO, Massachusetts 2761", lat: 41.960406, lng: -71.342274, owner: "Aram Takvoryan" },
+            { name: "SPEEDCRAFT NISSAN", address: "885 QUAKER LANE, WEST WARWICK, Rhode Island 2893", lat: 41.671991, lng: -71.500542, owner: "Aram Takvoryan" },
+            { name: "BATTLES NISSAN, LLC", address: "60 MACARTHUR BLVD, BUZZARDS BAY, Massachusetts 2532", lat: 41.738825, lng: -70.586211, owner: "Aram Takvoryan" },
+            { name: "NISSAN OF YORKTOWN HEIGHTS 5681", address: "3495 CROMPOND RD, YORKTOWN HEIGHTS, New York 10598", lat: 41.289484, lng: -73.836737, owner: "Shane Marshall" },
+            { name: "SOUTH SHORE NISSAN", address: "200 SUNRISE HIGHWAY, AMITYVILLE, New York 11701", lat: 40.687106, lng: -73.4148, owner: "Shane Marshall" },
+            { name: "DARTMOUTH NISSAN", address: "483 STATE ROAD, NORTH DARTMOUTH, Massachusetts 2747", lat: 41.640284, lng: -71.005404, owner: "Aram Takvoryan" },
+            { name: "FRED BEANS NISSAN OF FLEMINGTON 3918/5719", address: "172 US HIGHWAY 202, FLEMINGTON, New Jersey 8822", lat: 40.477881, lng: -74.862833, owner: "Timothy Hood" },
+            { name: "MOYER NISSAN", address: "6210 PENN AVE, WERNERSVILLE, Pennsylvania 19565", lat: 40.331837, lng: -76.091661, owner: "Timothy Hood" },
+            { name: "BENNINGTON NISSAN, INC.", address: "24 PERFORMANCE DR, BENNINGTON, Vermont 5201", lat: 42.894951, lng: -73.196938, owner: "David Savine" },
+            { name: "SIMMONS ROCKWELL NIS/HORN", address: "1151 COUNTY ROUTE 66, HORNELL, New York 14843", lat: 42.366446, lng: -77.675634, owner: "Sandra Snyder" },
+            { name: "ROUTE 17 NISSAN", address: "45 ROUTE 17 SOUTH, HASBROUCK HEIGHTS, New Jersey 7604", lat: 40.85134, lng: -74.075306, owner: "Glenny Martinez" },
+            { name: "NISSAN OF BAY SHORE 3952/5749", address: "1521 SUNRISE HIGHWAY, BAY SHORE, New York 11706", lat: 40.739482, lng: -73.245994, owner: "Shane Marshall" },
+            { name: "RIVERSIDE NISSAN", address: "400 RIVER STREET, HACKENSACK, New Jersey 7601", lat: 40.890829, lng: -74.038123, owner: "Glenny Martinez" },
+            { name: "FERRARIO NISSAN", address: "200 SPRING STREET, SAYRE, Pennsylvania 18840", lat: 41.994979, lng: -76.521402, owner: "David Savine" },
+            { name: "PATRIOT NISSAN", address: "93 S BROADWAY, SALEM, New Hampshire 3097", lat: 42.772798, lng: -71.22178, owner: "Sandra Snyder" },
+            { name: "HART NISSAN OF NOVA, LLC", address: "6570 AMHERST AVE, SPRINGFIELD, Virginia 22150", lat: 38.776205, lng: -77.185395, owner: "Rachel Shifflett-Engler" },
+            { name: "OURISMAN NISSAN", address: "3514 FORT MEADE ROAD, LAUREL, Maryland 20724", lat: 39.10124, lng: -76.824618, owner: "Sandra Snyder" },
+            { name: "MATTHEWS NISSAN", address: "3101 VESTAL PKWY E, VESTAL, New York 13850", lat: 42.09583, lng: -76.003763, owner: "David Savine" },
+            { name: "JIM COLEMAN NIS ELLICOTT", address: "8569 BALTIMORE NAT'L PIKE, ELLICOTT CITY, Maryland 21043", lat: 39.282647, lng: -76.808665, owner: "Rachel Shifflett-Engler" },
+            { name: "NISSAN OF LEBANON 4243/5893", address: "51 EVANS DR, LEBANON, New Hampshire 3766", lat: 43.65073, lng: -72.247468, owner: "Aram Takvoryan" },
+            { name: "NORTH SHORE NISSAN", address: "24A COMMONWEALTH AVE, DANVERS, Massachusetts 1923", lat: 42.549433, lng: -70.944046, owner: "Aram Takvoryan" },
+            { name: "PIAZZA NISSAN OF ARDMORE", address: "265 E LANCASTER AVE, ARDMORE, Pennsylvania 19003", lat: 40.002735, lng: -75.280071, owner: "Timothy Hood" },
+            { name: "CIOCCA NISSAN QUAKERTOWN", address: "520 S WEST END AVE, QUAKERTOWN, Pennsylvania 18951", lat: 40.430297, lng: -75.350904, owner: "Timothy Hood" },
+            { name: "GIRARD MOTORS, INC 6033", address: "425 GOLD STAR HWY, GROTON, Connecticut 6340", lat: 41.371723, lng: -72.054901, owner: "Aram Takvoryan" },
+            { name: "NAPOLI NISSAN 6036", address: "688 BRIDGEPORT AVE, MILFORD, Connecticut 6460", lat: 41.209639, lng: -73.083585, owner: "Aram Takvoryan" },
+            { name: "BARBERINO NISSAN 1033/06038", address: "505 N COLONY ST, WALLINGFORD, Connecticut 6492", lat: 41.46752, lng: -72.817312, owner: "Aram Takvoryan" },
+            { name: "KINGS NISSAN INC", address: "2758 CONEY ISLAND AVE, BROOKLYN, New York 11235", lat: 40.589144, lng: -73.960689, owner: "Shane Marshall" },
+            { name: "HOSELTON NISSAN, INC. 1444/07156", address: "66 MARSH RD, EAST ROCHESTER, New York 14445", lat: 43.099976, lng: -77.481483, owner: "David Savine" },
+            { name: "BRIDGEWATER NISSAN", address: "1400 ROUTE 22, BRIDGEWATER, New Jersey 8807", lat: 40.574974, lng: -74.571561, owner: "Glenny Martinez" },
+            { name: "ACME NISSAN", address: "PO BOX 200, MONMOUTH JUNCTION, New Jersey 8852", lat: 40.386942, lng: -74.555799, owner: "Glenny Martinez" },
+            { name: "LYNNES NISSAN CITY INC.", address: "318 BLOOMFIELD AVE, BLOOMFIELD, New Jersey 7003", lat: 40.7849, lng: -74.193422, owner: "Glenny Martinez" },
+            { name: "SANSONE NISSAN, INC. 1282/08073", address: "90-100 U.S. ROUTE #1, AVENEL, New Jersey 7001", lat: 40.591475, lng: -74.274834, owner: "Glenny Martinez" },
+            { name: "WOODBURY NISSAN, INC", address: "439 MANTUA AVE, WOODBURY, New Jersey 8096", lat: 39.831986, lng: -75.157954, owner: "Timothy Hood" },
+            { name: "COLONIAL NISSAN INC", address: "117 BUSTLETON PIKE, FEASTERVILLE, Pennsylvania 19053", lat: 40.138467, lng: -75.006845, owner: "Timothy Hood" },
+            { name: "LOUGHEAD NISSAN 1273/09078", address: "755 S CHESTER RD, SWARTHMORE, Pennsylvania 19081", lat: 39.888855, lng: -75.353725, owner: "Timothy Hood" },
+            { name: "HAMILTON NISSAN, INC.", address: "1929 DUAL HWY, HAGERSTOWN, Maryland 21740", lat: 39.605278, lng: -77.688226, owner: "Rachel Shifflett-Engler" },
+            { name: "BEL AIR NISSAN", address: "1506 BEL AIR RD, BEL AIR, Maryland 21014", lat: 39.505897, lng: -76.382381, owner: "Rachel Shifflett-Engler" },
+            { name: "NATIONWIDE NISSAN", address: "2085 YORK RD, TIMONIUM, Maryland 21093", lat: 39.440528, lng: -76.625717, owner: "Rachel Shifflett-Engler" },
+            { name: "TRI-STATE NISSAN", address: "1230 MILLWOOD PIKE, WINCHESTER, Virginia 22602", lat: 39.156528, lng: -78.147513, owner: "Rachel Shifflett-Engler" },
+            { name: "KELLY INFINITI", address: "155 ANDOVER ST, DANVERS, Massachusetts 1923", lat: 42.558563, lng: -70.970366, owner: "Aram Takvoryan" },
+            { name: "HARTE INFINITI, INC. 70006", address: "150 WESTON ST, HARTFORD, Connecticut 6120", lat: 41.790645, lng: -72.660562, owner: "Aram Takvoryan" },
+            { name: "KINGS INFINITI, INC.", address: "20 NEPTUNE AVE, BROOKLYN, New York 11235", lat: 40.582649, lng: -73.95554, owner: "Shane Marshall" },
+            { name: "DOUGLAS MOTORS CORP.", address: "430 MORRIS AVE, SUMMIT, New Jersey 7901", lat: 40.723368, lng: -74.369861, owner: "Glenny Martinez" },
+            { name: "NATIONWIDE INF TIMONIUM", address: "22 W TIMONIUM RD, TIMONIUM, Maryland 21093", lat: 39.440606, lng: -76.629604, owner: "Rachel Shifflett-Engler" },
+            { name: "INFINITI OF NORWOOD", address: "866-880 BOSTON PROVIDENCE, NORWOOD, Massachusetts 2062", lat: 42.181888, lng: -71.187124, owner: "Aram Takvoryan" },
+            { name: "HOLMAN INFINITI", address: "577 ROUTE 38 W, MAPLE SHADE, New Jersey 8052", lat: 39.941775, lng: -74.999729, owner: "Timothy Hood" },
+            { name: "RAMSEY INFINITI, INC.", address: "535 RTE 17 S, RAMSEY, New Jersey 7446", lat: 41.056444, lng: -74.121009, owner: "Glenny Martinez" },
+            { name: "CIRCLE INFINITI, INC.", address: "300 STATE HIGHWAY 36, WEST LONG BRANCH, New Jersey 7764", lat: 40.291902, lng: -74.033828, owner: "Glenny Martinez" },
+            { name: "JIM COLEMAN INFINITI", address: "10400 Auto Park Avenue, Bethesda, Maryland 20817", lat: 39.02808, lng: -77.146472, owner: "Rachel Shifflett-Engler" },
+            { name: "BILL DODGE INFINITI", address: "PO BOX 9567, WESTBROOK, Maine 4098", lat: 43.707947, lng: -70.352614, owner: "Aram Takvoryan" },
+            { name: "GEORGE HARTE INFINITI 70406", address: "1076 SOUTH COLONY RD, WALLINGFORD, Connecticut 6492", lat: 41.431262, lng: -72.834907, owner: "Aram Takvoryan" },
+            { name: "INFINITI OF WEST CHESTER", address: "1265 WILMINGTON PIKE, WEST CHESTER, Pennsylvania 19382", lat: 39.91572, lng: -75.573343, owner: "Timothy Hood" },
+            { name: "RAY CATENA INF OF BRIDGE", address: "1350 ROUTE 22 EAST, BRIDGEWATER, New Jersey 8807", lat: 40.575946, lng: -74.575504, owner: "Glenny Martinez" },
+            { name: "SHEEHY INFINITI/ANNAPOLIS", address: "123 FERGUSON RD, ANNAPOLIS, Maryland 21409", lat: 39.019822, lng: -76.477291, owner: "Rachel Shifflett-Engler" },
+            { name: "HERB CHAMBERS INFINITI", address: "312 TURNPIKE RD, WESTBOROUGH, Massachusetts 1581", lat: 42.282049, lng: -71.652047, owner: "Aram Takvoryan" },
+            { name: "INFINITI OF SUITLAND", address: "4731 Auth Place, Suitland-Silver Hill, Maryland 20746", lat: 38.82448, lng: -76.920826, owner: "Rachel Shifflett-Engler" },
+            { name: "INFINITI OF WILLIAMSVILLE 5409/71008", address: "8137 MAIN ST, WILLIAMSVILLE, New York 14221", lat: 42.962693, lng: -78.691464, owner: "David Savine" },
+            { name: "FETTE INFINITI, L.L.C.", address: "1137 ROUTE 46 EAST, CLIFTON, New Jersey 7013", lat: 40.869375, lng: -74.183586, owner: "Glenny Martinez" },
+            { name: "PASSPORT INFINITI/ALEXAND", address: "160 S PICKETT ST, ALEXANDRIA, Virginia 22304", lat: 38.80842, lng: -77.126163, owner: "Rachel Shifflett-Engler" },
+            { name: "LIA INFINITI", address: "965 NEW LOUDON RD, COHOES, New York 12047", lat: 42.76794, lng: -73.753059, owner: "David Savine" },
+            { name: "INFINITI OF SYRACUSE", address: "736 W GENESEE ST, SYRACUSE, New York 13204", lat: 43.053746, lng: -76.164367, owner: "David Savine" },
+            { name: "JBA INFINITI/ELLICOTT CTY", address: "8431 BALTIMORE NATL PIKE, ELLICOTT CITY, Maryland 21043", lat: 39.285234, lng: -76.80464, owner: "Rachel Shifflett-Engler" },
+            { name: "INFINITI OF NASHUA", address: "11 MARMON DR, NASHUA, New Hampshire 3060", lat: 42.729989, lng: -71.445625, owner: "Aram Takvoryan" },
+            { name: "SHEEHY INFINITI CHANTILLY", address: "4145 Auto Park Circle, Chantilly, Virginia 20151", lat: 38.903996, lng: -77.462308, owner: "Rachel Shifflett-Engler" },
+            { name: "INFINITI OF WARWICK", address: "1085 CENTERVILLE RD, WARWICK, Rhode Island 2886", lat: 41.698421, lng: -71.500401, owner: "Aram Takvoryan" },
+            { name: "FAULKNER INF WILLOW GROVE", address: "1510 EASTON RD, WILLOW GROVE, Pennsylvania 19090", lat: 40.160132, lng: -75.124326, owner: "Timothy Hood" },
+            { name: "INFINITI OF LYNBROOK", address: "875 SUNRISE HIGHWAY, LYNBROOK, New York 11563", lat: 40.656727, lng: -73.686183, owner: "Shane Marshall" },
+            { name: "INFINITI OF ENGLEWOOD", address: "60 ROCKWOOD PL, ENGLEWOOD, New Jersey 7631", lat: 40.878575, lng: -73.98248, owner: "Glenny Martinez" },
+            { name: "HOSELTON TOYOTA SA10001", address: "50 MARSH RD, EAST ROCHESTER, New York 14445", lat: 43.100266, lng: -77.480581, owner: "David Savine" },
+            { name: "MARC CHRYSLER DODGE JEEP RAM /SA10038", address: "1754 MAIN STREET, SANFORD, Maine 4073", lat: 43.403397, lng: -70.717266, owner: "Aram Takvoryan" },
+            { name: "CHRYSLER JEEP DODGE RAM 24 /SA10045", address: "1020 BELMONT STREET, BROCKTON, Massachusetts 2301", lat: 42.063073, lng: -71.058288, owner: "Sandra Snyder" },
+            { name: "STATION CHRYSLER JEEP /SA10046", address: "91 CHAUNCY STREET, MANSFIELD, Massachusetts 2048", lat: 42.031572, lng: -71.222906, owner: "Sandra Snyder" },
+            { name: "STATELINE CDJR /SA10047", address: "1491 BRAYTON POINT ROAD, SOMERSET, Massachusetts 2725", lat: 41.730818, lng: -71.174064, owner: "Sandra Snyder" },
+            { name: "STATELINE SUBARU /SA10048", address: "1491 BRAYTON POINT ROAD, SOMERSET, Massachusetts 2725", lat: 41.730818, lng: -71.174064, owner: "Sandra Snyder" },
+            { name: "FAULKNER ALFA ROMEO MASERATI OF WILLOW GROVE /SA10089", address: "1520 EASTON ROAD, WILLOW GROVE, Pennsylvania 19090", lat: 40.16026, lng: -75.124363, owner: "Timothy Hood" },
+            { name: "BARBERA'S AUTOLAND SB30001", address: "7810 ROOSEVELT BLVD., PHILADELPHIA, Pennsylvania 19152", lat: 40.054266, lng: -75.050532, owner: "Timothy Hood" },
+            { name: "JAMES CHEVROLET /SB30011", address: "108 S. COMRIE AVENUE, JOHNSTOWN, New York 12095", lat: 43.001315, lng: -74.357765, owner: "David Savine" },
+            { name: "JAMES CDJR, LLC /SB30012", address: "1429 STATE ROUTE 414, SENECA FALLS, New York 13148", lat: 42.956674, lng: -76.844114, owner: "David Savine" },
+            { name: "Cornerstone Mitsubishi", address: "580 MAIN STREET, WILMINGTON, Massachusetts 1887", lat: 42.543298, lng: -71.168272, owner: "Aram Takvoryan" },
+            { name: "Michaud Mitsubishi", address: "80 ANDOVER STREET, DANVERS, Massachusetts 1923", lat: 42.552256, lng: -70.961964, owner: "Aram Takvoryan" },
+            { name: "New Bedford Mitsubishi", address: "547 BELLEVILLE AVE, NEW BEDFORD, Massachusetts 2767", lat: 41.666911, lng: -70.922199, owner: "Aram Takvoryan" },
+            { name: "MIDSTATE MITSUBISHI /SM20077", address: "810 WASHINGTON STREET, AUBURN, Massachusetts 1501", lat: 42.181408, lng: -71.864747, owner: "Aram Takvoryan" },
+            { name: "Quirk Mitsubishi-Me", address: "162 HASKELL ROAD, BANGOR, Maine 4401", lat: 44.833213, lng: -68.738455, owner: "Aram Takvoryan" },
+            { name: "GRIFFETH FORD LINCOLN MITSUBISHI SM22015", address: "16 ACCESS HWY, CARIBOU, Maine 4736", lat: 46.873382, lng: -68.000443, owner: "Aram Takvoryan" },
+            { name: "COLD BROOK SAAB-MITSUBISHI SM22016", address: "337 MADISON AVENUE, SKOWHEGAN, Maine 4976", lat: 44.784386, lng: -69.728641, owner: "Aram Takvoryan" },
+            { name: "Nashua Mitsubishi", address: "5 ROCKNE DRIVE, NASHUA, New Hampshire 3060", lat: 42.726619, lng: -71.446623, owner: "Aram Takvoryan" },
+            { name: "ROUTE 46 MITSUBISHI /SM32068", address: "400 ROUTE 46, TOTOWA, New Jersey 7512", lat: 40.893808, lng: -74.23285, owner: "Glenny Martinez" },
+            { name: "J&S MITSUBISHI /SM32089", address: "1721 N OLDEN AVE, EWING, New Jersey 8638", lat: 40.246791, lng: -74.767609, owner: "Glenny Martinez" },
+            { name: "CORTESE MITSUBISHI 9542/SM35114", address: "2400 W. HENRIETTA ROAD, ROCHESTER, New York 14623", lat: 43.103427, lng: -77.627968, owner: "David Savine" },
+            { name: "MARINA MITSUBISHI 9543/SM35158", address: "941 RIDGE ROAD, WEBSTER, New York 14580", lat: 43.207068, lng: -77.463626, owner: "David Savine" },
+            { name: "JAMES MITSUBISHI 9552/SM35177", address: "1925 BLACK RIVER ROAD, ROME, New York 13440", lat: 43.237255, lng: -75.436866, owner: "David Savine" },
+            { name: "NORTHSTAR MITSUBISHI 9452/SM35180", address: "46-05 NORTHERN BLVD., LONG ISLAND CITY, New York 11101", lat: 40.754106, lng: -73.916054, owner: "Shane Marshall" },
+            { name: "DELLA MITSUBISHI 9553/SM35181", address: "7 DELLA DRIVE, PLATTSBURGH, New York 12901", lat: 44.695782, lng: -73.516537, owner: "David Savine" },
+            { name: "JAMES MITSUBISHI GREECE 9453/SM35186", address: "3800 W RIDGE RD, GREECE, New York 14626", lat: 43.214445, lng: -77.728494, owner: "David Savine" },
+            { name: "Prestige Mitsubishi", address: "377 TAUNTON AVE, EAST PROVIDENCE, Rhode Island 2914", lat: 41.820313, lng: -71.363973, owner: "Aram Takvoryan" },
+            { name: "SHIRLIE SLACK MITSUBISHI /SM46074", address: "11300 Patriot Highway, Fredericksburg, Virginia 22407", lat: 38.271875, lng: -77.493371, owner: "Rachel Shifflett-Engler" },
+            { name: "Auto Giants Mitsubishi", address: "7614 Centreville Road, MANASSAS, Virginia 20111", lat: 38.788369, lng: -77.449296, owner: "Rachel Shifflett-Engler" },
+            { name: "Burlington Mitsubishi /SM47007", address: "1835 SHELBURNE ROAD, SOUTH BURLINGTON, Vermont 5403", lat: 44.422351, lng: -73.212315, owner: "David Savine" },
+            { name: "JIM COLEMAN NIS BETHESDA", address: "10400 Auto Park Avenue, Bethesda, Maryland 20817", lat: 39.02808, lng: -77.146472, owner: "Rachel Shifflett-Engler" },
+            { name: "CAPITOL CDJR /SA10094", address: "1520 WEST MAIN STREET, WILLIMANTIC, Connecticut 6226", lat: 41.718637, lng: -72.235461, owner: "Aram Takvoryan" },
+            { name: "NISSAN NORTH PLAINFIELD", address: "545 ROUTE 22 W, PLAINFIELD, New Jersey 7060", lat: 40.629803, lng: -74.433878, owner: "Glenny Martinez" },
+            { name: "ROUTE 23 NISSAN", address: "1567 ROUTE 23, BUTLER, New Jersey 7405", lat: 41.005766, lng: -74.360355, owner: "Glenny Martinez" },
+            { name: "NISSAN OF GARDEN CITY 4131/5838", address: "316 N FRANKLIN ST, HEMPSTEAD, New York 11550", lat: 40.716045, lng: -73.62996, owner: "Shane Marshall" },
+            { name: "INFINITI OF GREENWICH 72518", address: "315 MILBANK AVENUE, GREENWICH, Connecticut 6830", lat: 41.023447, lng: -73.623294, owner: "Aram Takvoryan" },
+            { name: "LYNNES HYUNDAI /SA10101", address: "401 Bloomfield Ave, Bloomfield, New Jersey 7003", lat: 40.788234, lng: -74.194333, owner: "Glenny Martinez" },
+            { name: "LYNNES SUBARU /SA10100", address: "379 BLOOMFIELD AVENUE, BLOOMFIELD, New Jersey 7003", lat: 40.787406, lng: -74.193967, owner: "Glenny Martinez" },
+            { name: "NUCAR NISSAN OF TILTON", address: "40 EAST MAIN ST, TILTON, New Hampshire 3276", lat: 43.450725, lng: -71.573481, owner: "Sandra Snyder" },
+            { name: "SOUTH SHORE MITSUBISHI /SM35195", address: "185 E Sunrise Hwy, Freeport, New York 11520", lat: 40.657826, lng: -73.57444, owner: "Shane Marshall" },
+            { name: "JIMMY THE BOXER AUTO MALL 8077/SA10111", address: "4212 Ridge Road, Nottingham, Maryland 21236", lat: 39.376405, lng: -76.504452, owner: "Rachel Shifflett-Engler" },
+            { name: "STATION BUICK-GMC /SA10102", address: "2 CHAUNCY STREET, MANSFIELD, Massachusetts 2048", lat: 42.03319, lng: -71.216241, owner: "Sandra Snyder" },
+            { name: "WILE HYUNDAI /SB30021", address: "21 ROUTE 66 EAST, COLUMBIA, Connecticut 6237", lat: 41.71767, lng: -72.248422, owner: "Aram Takvoryan" },
+            { name: "ROUTE 17 MITSUBISHI /SM32095", address: "1355 ROUTE 17 SOUTH, RAMSEY, New Jersey 7446", lat: 41.072496, lng: -74.142041, owner: "Glenny Martinez" },
+            { name: "NIELSEN NISSAN INC.", address: "59 ROUTE 206, STANHOPE, New Jersey 7874", lat: 40.929997, lng: -74.719717, owner: "Glenny Martinez" },
+            { name: "MATT BLATT NISSAN 4223/5875", address: "6021 BLACK HORSE PIKE, EGG HARBOR TOWNSHIP, New Jersey 8234", lat: 39.437113, lng: -74.616649, owner: "Timothy Hood" },
+            { name: "ROUTE 9 NISSAN", address: "273 TURNPIKE ROAD, WESTBOROUGH, Massachusetts 1581", lat: 42.283621, lng: -71.64587, owner: "Aram Takvoryan" },
+            { name: "POHANKA NISSAN / STAFFORD", address: "1 COACHMAN CIRCLE, STAFFORD, Virginia 22554", lat: 38.468779, lng: -77.400069, owner: "Rachel Shifflett-Engler" },
+            { name: "MATTHEWS NISSAN OF CLAY", address: "3893 ROUTE 31, LIVERPOOL, New York 13090", lat: 43.185958, lng: -76.242102, owner: "David Savine" },
+            { name: "NISSAN CITY OF RED BANK 4238/5892", address: "120 NEWMAN SPRINGS RD E, RED BANK, New Jersey 7701", lat: 40.337686, lng: -74.072273, owner: "Glenny Martinez" },
+            { name: "NISSAN OF BOWIE", address: "2200 CRAIN HWY, BOWIE, Maryland 20716", lat: 38.922321, lng: -76.717665, owner: "Rachel Shifflett-Engler" },
+            { name: "BOB JOHNSON INFINITI", address: "3855 W HENRIETTA ROAD, ROCHESTER, New York 14623", lat: 43.077119, lng: -77.642725, owner: "David Savine" },
+            { name: "BOB JOHNSON NISSAN", address: "3817 W HENRIETTA RD, ROCHESTER, New York 14623", lat: 43.077856, lng: -77.64315, owner: "David Savine" },
+            { name: "VOLKSWAGEN OF FREEHOLD /SB30023", address: "4360 US 9, FREEHOLD, New Jersey 7728", lat: 40.282292, lng: -74.295187, owner: "Glenny Martinez" },
+            { name: "NISSAN OF WESTBURY", address: "939 OLD COUNTRY ROAD, WESTBURY, New York 11590", lat: 40.754462, lng: -73.562166, owner: "Shane Marshall" },
+            { name: "NISSAN CITY/PORT CHESTER", address: "225 BOSTON POST RD, PORT CHESTER, New York 10573", lat: 40.996315, lng: -73.669358, owner: "Shane Marshall" },
+            { name: "STEET PONTE NISSAN, INC.", address: "4967 COMMERCIAL DR, YORKVILLE, New York 13495", lat: 43.103874, lng: -75.29904, owner: "David Savine" },
+            { name: "MATTHEWS NISSAN WELLESLEY", address: "960-962 WORCESTER STREET, WELLESLEY, Massachusetts 2482", lat: 42.304006, lng: -71.32348, owner: "Aram Takvoryan" },
+            { name: "AUTO GIANTS NISSAN", address: "14777 Jefferson Davis Highway, Woodbridge, Virginia 22191", lat: 38.629317, lng: -77.274031, owner: "Rachel Shifflett-Engler" },
+            { name: "NISSAN OF ROCKVILLE CENTRE 4267/5917", address: "700 Sunrise Highway, Rockville Centre, New York 11570", lat: 40.656488, lng: -73.625448, owner: "Shane Marshall" },
+            { name: "AVI AUTO SALES /SB30026", address: "430 White Horse Pike N, Magnolia, New Jersey 8107", lat: 39.912274, lng: -75.085035, owner: "Timothy Hood" },
+            { name: "LUXURY MOTOR CARS LLC / SA10120", address: "245 U.S. 22, Hillside, New Jersey 7205", lat: 40.698906, lng: -74.227007, owner: "Glenny Martinez" },
+            { name: "ROCKLAND MOTORSPORTS, LLC /SB30027", address: "138 Orange Avenue, Suffern, New York 10901", lat: 41.114069, lng: -74.153192, owner: "Shane Marshall" },
+            { name: "CRABTREE NISSAN CRABTREE NISSAN 4281/5928", address: "2191 Straits Turnpike, Middlebury, Connecticut 6762", lat: 41.568475, lng: -73.09911, owner: "Glenny Martinez" },
+            { name: "MERCEDES BENZ OF DOYLESTOWN /SB30029", address: "3664 North Easton Road, Doylestown, Pennsylvania 18902", lat: 40.33067, lng: -75.130533, owner: "Timothy Hood" },
+            { name: "WALLY'S NISSAN OF LATHAM", address: "976 Loudon Road, Latham, New York 12110", lat: 42.76939, lng: -73.754504, owner: "David Savine" },
+            { name: "WALLY'S MITSUBISHI /SM35196", address: "18822 U.S. route 11, Watertown, New York 13601", lat: 43.938975, lng: -75.92438, owner: "David Savine" },
+            { name: "EDISON INFINITI", address: "842 U.S. 1, Edison, New Jersey 8817", lat: 40.513532, lng: -74.377837, owner: "Glenny Martinez" },
+            { name: "NISSAN CITY OF SPRINGFIELD 4295/5948", address: "146 U.S. 22, Springfield, New Jersey 7081", lat: 40.687279, lng: -74.318724, owner: "Glenny Martinez" },
+            { name: "NISSAN / MERRIMACK VALLEY", address: "95 Drum Hill Road, Chelmsford, Massachusetts 1863", lat: 42.624703, lng: -71.364319, owner: "Aram Takvoryan" },
+            { name: "PERUZZI BUICK GMC SA10125", address: "156 Lincoln Highway, Fairless Hills, Pennsylvania 19030", lat: 40.181451, lng: -74.862755, owner: "Timothy Hood" },
+            { name: "AUTOFAIR NISSAN", address: "45 Portsmouth Avenue, Stratham, New Hampshire 3885", lat: 43.003587, lng: -70.921187, owner: "Aram Takvoryan" },
+            { name: "BRUCE BENNETT NISSAN OF DANBURY 5958", address: "13 Sugar Hollow Road, Danbury, Connecticut 6810", lat: 41.375715, lng: -73.476095, owner: "Aram Takvoryan" },
+            { name: "BRUCE BENNETT INFINITI OF DANBURY 70586", address: "13 Sugar Hollow Road, Danbury, Connecticut 6810", lat: 41.375715, lng: -73.476095, owner: "Aram Takvoryan" },
+            { name: "EMPIRE NISSAN BAY RIDGE", address: "6501 5th Avenue, Brooklyn, New York 11220", lat: 40.636402, lng: -74.019166, owner: "Shane Marshall" },
+            { name: "BANISTER FORD OF MARLOW HEIGHTS /SA10131", address: "5000 Auth Road, Camp Springs, Maryland 20746", lat: 38.822906, lng: -76.920247, owner: "Rachel Shifflett-Engler" },
+            { name: "HERTRICH INFINITI NEWARK", address: "303 East Cleveland Avenue, Newark, Delaware 19711", lat: 39.686614, lng: -75.739871, owner: "Timothy Hood" },
+            { name: "HERTRICH NISSAN OF NEWARK", address: "303 East Cleveland Avenue, Newark, Delaware 19711", lat: 39.686614, lng: -75.739871, owner: "Timothy Hood" },
+            { name: "SILVER LINE AUTO GROUP /SA10136", address: "7020 Northern Boulevard, Queens, New York 11372", lat: 40.739186, lng: -73.893405, owner: "Shane Marshall" },
+            { name: "ANNAPOLIS NISSAN, LLC", address: "2542 Riva Road, Annapolis, Maryland 21401", lat: 38.980005, lng: -76.548718, owner: "Rachel Shifflett-Engler" },
+            { name: "VISION NISSAN GREECE", address: "400 West Ridge Road, Rochester, New York 14615", lat: 43.200293, lng: -77.637488, owner: "David Savine" },
+            { name: "VISION NISSAN CANANDAIGUA", address: "2409 New York 332, Canandaigua, New York 14424", lat: 42.915806, lng: -77.301631, owner: "David Savine" },
+            { name: "VISION NISSAN WEBSTER", address: "785 Ridge Road, Webster, New York 14580", lat: 43.203979, lng: -77.478278, owner: "David Savine" },
+            { name: "BRONX NISSAN", address: "3660 Boston Road, The Bronx, New York 10469", lat: 40.879866, lng: -73.841494, owner: "Shane Marshall" },
+            { name: "RACEWAY NISSAN / FREEHOLD", address: "4039-4041 ROUTE 9 N, FREEHOLD, New Jersey 7728", lat: 40.263051, lng: -74.291877, owner: "Glenny Martinez" },
+            { name: "INFINITI OF FLEMINGTON 72213", address: "204 U.S. 202, Flemington, New Jersey 8822", lat: 40.485712, lng: -74.862367, owner: "Timothy Hood" },
+            { name: "SAFFORD BROWN NISSAN STERLING", address: "45155 TOWLERN PL, STERLING, Virginia 20166", lat: 39.01046, lng: -77.438399, owner: "Rachel Shifflett-Engler" },
+            { name: "POUGHKEEPSIE NISSAN", address: "1445 ROUTE 9, WAPPINGERS FALLS, New York 12590", lat: 41.587252, lng: -73.908632, owner: "Shane Marshall" },
+            { name: "YONKERS AUTO GALLERY, LLC /SA10174", address: "1980 Central Park Avenue, Yonkers, New York 10710", lat: 40.965862, lng: -73.837873, owner: "Glenny Martinez" },
+            { name: "ELITE MITSUBISHI /SM35198", address: "134-10 Atlantic Avenue, Queens, New York 11419", lat: 40.696861, lng: -73.814788, owner: "Shane Marshall" },
+            { name: "JIM COLEMAN NISSAN SILVER SPRING", address: ", , Maryland ", lat: 38.946658, lng: -76.674494, owner: "Rachel Shifflett-Engler" },
+            { name: "ROUTE 2 MITSUBISHI /SM40018", address: ", , Rhode Island ", lat: 41.597419, lng: -71.527272, owner: "Aram Takvoryan" },
+            { name: "AUTO GIANTS TEMPLE HILLS SA10178", address: "4600 Branch Avenue, Temple Hills, Maryland 20748", lat: 38.828918, lng: -76.927746, owner: "Rachel Shifflett-Engler" },
+            { name: "INFINITI CITY OF QUEENS", address: "21707 NORTHERN BLVD, BAYSIDE, New York 11361", lat: 40.761147, lng: -73.764502, owner: "Shane Marshall" },
+            { name: "PLATINUM MOTORS TOMS RIVER /SB30033", address: "810 ROUTE 37 WEST, TOMS RIVER, New Jersey 8755", lat: 39.971595, lng: -74.235612, owner: "Glenny Martinez" },
+            { name: "PLATINUM MOTORS FREEHOLD /SB30034", address: "504 US HWY 9 SOUTH, Freehold, New Jersey 7728", lat: 40.212125, lng: -74.260321, owner: "Glenny Martinez" },
+            { name: "WATERTOWN MITSUBISHI /SM07066", address: "724 Straits Turnpike, Watertown, Connecticut 6795", lat: 41.572002, lng: -73.09977, owner: "Glenny Martinez" },
+            { name: "EMPIRE NISSAN OF HILLSIDE 6006", address: "56 ROUTE 22 EAST, HILLSIDE, New Jersey 7205", lat: 40.696295, lng: -74.219881, owner: "Glenny Martinez" },
+            { name: "SMITHTOWN NISSAN", address: "926 MIDDLE COUNTRY RD, SAINT JAMES, New York 11780", lat: 40.860829, lng: -73.142031, owner: "Shane Marshall" },
+            { name: "MILFORD MITSUBISHI SM07065", address: "750 Bridgeport Ave, Milford, Connecticut 6460", lat: 41.211754, lng: -73.08196, owner: "Aram Takvoryan" },
+            { name: "TODD NISSAN OF TORRINGTON 4380/6019", address: "522 Winsted Road, Torrington, Connecticut 6790", lat: 41.82692, lng: -73.110764, owner: "Glenny Martinez" },
+            { name: "EASTERNS NISSAN OF WHITE MARSH", address: "5361 Nottingridge Road, White Marsh, Maryland 21162", lat: 39.373448, lng: -76.444571, owner: "Rachel Shifflett-Engler" },
+            { name: "NUCAR NISSAN OF KEENE", address: "544 MONADNOCK HWY, SWANZEY, New Hampshire 3446", lat: 42.879859, lng: -72.234173, owner: "Aram Takvoryan" },
+            { name: "INFINITI ARDMORE", address: "130 SIBLEY AVE, ARDMORE, Pennsylvania 19003", lat: 40.006338, lng: -75.284838, owner: "Timothy Hood" },
+            { name: "ROMEO NISSAN, LLC", address: "140 New York 28, Kingston, New York 12401", lat: 41.948976, lng: -74.031825, owner: "David Savine" },
+            { name: "INFINITI CITY MASSAPEQUA", address: "4450 SUNRISE HWY, MASSAPEQUA, New York 11758", lat: 40.675786, lng: -73.469882, owner: "Shane Marshall" },
+            { name: "INFINITI OF WHITE PLAINS", address: "500 Tarrytown Road, White Plains, New York 10607", lat: 41.043871, lng: -73.801739, owner: "Glenny Martinez" },
+            { name: "NUCAR NISSAN OF ALLENTOWN 1316/6043", address: "1648 PLAZA LANE, ALLENTOWN, Pennsylvania 18104", lat: 40.621101, lng: -75.502324, owner: "Timothy Hood" },
+            { name: "NIELSEN NISSAN DENVILLE", address: "3057 ROUTE 10, DENVILLE, New Jersey 7834", lat: 40.864564, lng: -74.506459, owner: "Glenny Martinez" },
+            { name: "CENTEREACH AUTO SUPERCENTER SA10189", address: "1790 Middle Country Rd, Centereach, New York 11720", lat: 40.859529, lng: -73.075579, owner: "Shane Marshall" },
+            { name: "INFINITI OF SMITHTOWN 5008/71016", address: "587 MIDDLE COUNTRY RD, SAINT JAMES, New York 11780", lat: 40.86047, lng: -73.158829, owner: "Shane Marshall" },
+            { name: "FAMILY NISSAN 3662/6069", address: "600 BURNSIDE AVE, INWOOD, New York 11096", lat: 40.622175, lng: -73.74289, owner: "Shane Marshall" },
+            { name: "BERTERA NISSAN MANCHESTER 6070", address: "30 TOLLAND TURNPIKE, MANCHESTER, Connecticut 6040", lat: 41.814221, lng: -72.507794, owner: "Aram Takvoryan" },
+            { name: "QUALITY AUTO CENTER SB30041", address: "345 U.S. 22, Springfield, New Jersey 7081", lat: 40.684462, lng: -74.331925, owner: "Glenny Martinez" },
+            { name: "MASERATI OF BERGEN COUNTY SB30042", address: "145 New Jersey 17, Upper Saddle River, New Jersey 7458", lat: 41.046639, lng: -74.117299, owner: "Glenny Martinez" },
+            { name: "BELLA NISSAN OF PITTSFIELD", address: "25 West Housatonic Street, Pittsfield, Massachusetts 1201", lat: 42.445104, lng: -73.256252, owner: "Aram Takvoryan" },
+            { name: "NUCAR INFINITI OF ALLENTOWN", address: "1648 Plaza Lane, Allentown, Pennsylvania 18104", lat: 40.621101, lng: -75.502324, owner: "Timothy Hood" }
+            ];
+
+        // Assign colors to each Account Owner
+        var ownerColors = {
+            "Rachel Shifflett-Engler": "red",
+            "Aram Takvoryan": "blue",
+            "David Savine": "green",
+            "Shane Marshall": "purple",
+            "Timothy Hood": "orange",
+            "Glenny Martinez": "yellow",
+            "Sandra Snyder": "pink"
+        };
+
+        // Store markers in a layer group for easy clearing
+        var markersLayer = L.layerGroup().addTo(map);
+
+        // Function to update markers based on selected owner
+        function updateMarkers(selectedOwner) {
+            markersLayer.clearLayers(); // Clear existing markers
+            dealerships.forEach(function(dealer) {
+                if (selectedOwner === "All" || dealer.owner === selectedOwner) {
+                    var markerIcon = L.divIcon({
+                        className: "custom-icon",
+                        html: `<div style="background-color: ${ownerColors[dealer.owner]}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`,
+                        iconSize: [20, 20]
+                    });
+                    var marker = L.marker([dealer.lat, dealer.lng], { icon: markerIcon }).addTo(markersLayer);
+                    marker.bindPopup("<b>" + dealer.name + "</b><br>" + dealer.address + "<br>Owner: " + dealer.owner);
+                    marker.on('mouseover', function() {
+                        marker.openPopup();
+                    });
+                    marker.on('mouseout', function() {
+                        marker.closePopup();
+                    });
+                }
+            });
+        }
+
+        // Initial load with all markers
+        updateMarkers("All");
+
+        // Event listener for dropdown change
+        document.getElementById("ownerFilter").addEventListener("change", function() {
+            var selectedOwner = this.value;
+            updateMarkers(selectedOwner);
+        });
+
+        // Adjust map view on window resize
+        window.addEventListener('resize', function() {
+            map.invalidateSize();
+        });
+    </script>
+</body>
+</html>
