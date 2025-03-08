@@ -29,6 +29,9 @@
       margin-top: 10px;
       font-size: 16px;
     }
+    #stateFilter {
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
@@ -43,6 +46,22 @@
       <option value="Timothy Hood">Timothy Hood</option>
       <option value="Glenny Martinez">Glenny Martinez</option>
       <option value="Sandra Snyder">Sandra Snyder</option>
+    </select>
+    <label for="stateFilter">Filter by State: </label>
+    <select id="stateFilter">
+      <option value="All">All</option>
+      <option value="Maryland">Maryland</option>
+      <option value="Massachusetts">Massachusetts</option>
+      <option value="New York">New York</option>
+      <option value="Connecticut">Connecticut</option>
+      <option value="Virginia">Virginia</option>
+      <option value="Maine">Maine</option>
+      <option value="New Jersey">New Jersey</option>
+      <option value="Pennsylvania">Pennsylvania</option>
+      <option value="New Hampshire">New Hampshire</option>
+      <option value="Vermont">Vermont</option>
+      <option value="Delaware">Delaware</option>
+      <option value="Rhode Island">Rhode Island</option>
     </select>
   </div>
   <div id="map"></div>
@@ -260,11 +279,13 @@
     // Store markers in a layer group for easy clearing
     var markersLayer = L.layerGroup().addTo(map);
 
-    // Function to update markers based on selected owner
-    function updateMarkers(selectedOwner) {
+    // Function to update markers based on selected owner and state
+    function updateMarkers(selectedOwner, selectedState) {
       markersLayer.clearLayers(); // Clear existing markers
       dealerships.forEach(function(dealer) {
-        if (selectedOwner === "All" || dealer.owner === selectedOwner) {
+        var dealerState = dealer.address.split(', ').slice(-2, -1)[0];
+        if ((selectedOwner === "All" || dealer.owner === selectedOwner) &&
+            (selectedState === "All" || dealerState === selectedState)) {
           var markerIcon = L.divIcon({
             className: "custom-icon",
             html: `<div style="background-color: ${ownerColors[dealer.owner]}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`,
@@ -283,12 +304,19 @@
     }
 
     // Initial load with all markers
-    updateMarkers("All");
+    updateMarkers("All", "All");
 
     // Event listener for dropdown change
     document.getElementById("ownerFilter").addEventListener("change", function() {
       var selectedOwner = this.value;
-      updateMarkers(selectedOwner);
+      var selectedState = document.getElementById("stateFilter").value;
+      updateMarkers(selectedOwner, selectedState);
+    });
+
+    document.getElementById("stateFilter").addEventListener("change", function() {
+      var selectedState = this.value;
+      var selectedOwner = document.getElementById("ownerFilter").value;
+      updateMarkers(selectedOwner, selectedState);
     });
 
     // Adjust map view on window resize
