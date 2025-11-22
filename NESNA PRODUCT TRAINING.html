@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nissan Product Training Game</title>
+    <!-- Nissan favicon (32x32 PNG) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="https://www.motuscommercials.co.uk/images/mobile-icons/nissan/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://www.motuscommercials.co.uk/images/mobile-icons/nissan/favicon-16x16.png">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f7f7f7;
+            color: #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: vh;
+        }
+        header {
+            width: 100%;
+            background: #C3002F;
+            color: white;
+            padding: 20px 10px;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        #menu {
+            width: 100%;
+            max-width: 900px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #menu h2 {
+            margin-top: 0;
+            margin-bottom: 6px;
+        }
+        #menu p {
+            margin-top: 4px;
+            margin-bottom: 16px;
+            color: #555;
+        }
+        .category-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .category-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+        }
+        .category-item label {
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+        #menu button {
+            margin: 6px 6px 0 0;
+            padding: 10px 18px;
+            background: #C3002F;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        #menu button.secondary {
+            background: #fff;
+            color: #C3002F;
+            border: 1px solid #C3002F;
+        }
+        #menu button:hover {
+            opacity: 0.9;
+        }
+
+        #game {
+            width: 100%;
+            max-width: 900px;
+            margin: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+            min-height: 350px;
+        }
+        #progressBar {
+            height: 8px;
+            background: #ddd;
+            width: 100%;
+            position: relative;
+        }
+        #progressBarFill {
+            height: 100%;
+            width: 0;
+            background: #C3002F;
+            transition: width 0.3s ease;
+        }
+        #questionHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            font-size: 0.9em;
+            color: #555;
+            border-bottom: 1px solid #eee;
+        }
+        #questionContainer {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #questionText {
+            font-size: 1.15em;
+            margin-bottom: 16px;
+            font-weight: bold;
+        }
+        .options {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .options li {
+            margin: 8px 0;
+        }
+        .option-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #C3002F;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95em;
+            text-align: left;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .option-button:hover:not(.disabled) {
+            background: #C3002F;
+            color: white;
+        }
+        .option-button.correct {
+            background: #008000;
+            border-color: #008000;
+            color: white;
+        }
+        .option-button.incorrect {
+            background: #b00020;
+            border-color: #b00020;
+            color: white;
+        }
+        #feedback {
+            margin-top: 12px;
+            font-style: italic;
+            color: #555;
+        }
+        #navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px 14px;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+        }
+        #scoreDisplay {
+            font-weight: bold;
+            color: #C3002F;
+        }
+        #homeButtonNav {
+            padding: 8px 16px;
+            background: #C3002F;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        #homeButtonNav:hover {
+            opacity: 0.9;
+        }
+        @media (max-width: 600px) {
+            .category-list {
+                grid-template-columns: 1fr;
+            }
+            #navigation {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>Nissan Product Training Game</header>
+
+    <div id="menu">
+        <h2>Select Product Categories</h2>
+        <p>Choose one or more product lines (or use “Select All Products”), then start a 15-question randomized quiz.</p>
+
+        <div class="category-list">
+            <div class="category-item">
+                <input type="checkbox" id="cat-vsc" data-cat="vsc_wrap">
+                <label for="cat-vsc"><strong>VSC &amp; Wraps</strong> – New/Pre-Owned VSC, Wrap, eligibility, terms, and benefits.</label>
+            </div>
+            <div class="category-item">
+                <input type="checkbox" id="cat-cpo" data-cat="cpo_cert">
+                <label for="cat-cpo"><strong>CPO &amp; Certified Select</strong> – CPO, CPO Wrap, Certified Select eligibility and coverage.</label>
+            </div>
+            <div class="category-item">
+                <input type="checkbox" id="cat-ppm" data-cat="ppm">
+                <label for="cat-ppm"><strong>PPM</strong> – Scheduled Maintenance, Basic, EV plans, tire hazard, intervals.</label>
+            </div>
+            <div class="category-item">
+                <input type="checkbox" id="cat-gap" data-cat="gap_anc">
+                <label for="cat-gap"><strong>GAP &amp; Ancillary</strong> – GAP, Tire &amp; Wheel, PDR, Key, bundles, cancellation.</label>
+            </div>
+        </div>
+
+        <button id="selectAllBtn" class="secondary">Select All Products</button>
+        <button id="startQuizBtn">Start 15-Question Quiz</button>
+    </div>
+
+    <div id="game">
+        <div id="progressBar">
+            <div id="progressBarFill"></div>
+        </div>
+        <div id="questionHeader">
+            <div id="categoryLabel"></div>
+            <div id="questionNumber"></div>
+        </div>
+        <div id="questionContainer">
+            <div id="questionText"></div>
+            <div id="answerArea"></div>
+            <div id="feedback"></div>
+        </div>
+        <div id="navigation">
+            <div id="scoreDisplay">Score: 0</div>
+            <div id="progressText"></div>
+            <button id="homeButtonNav">Return to Home</button>
+        </div>
+    </div>
+
+    <script>
+        const QUESTION_BANK = [];
+
+        const VSC_WRAP = [
+            {
+                id: "VSC-1",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "For a NEW Nissan Security+Plus VSC, when does coverage begin?",
+                options: [
+                    "On the vehicle purchase date with current mileage",
+                    "On the manufacturer’s original warranty start date with mileage at zero",
+                    "On the date the VSC is printed",
+                    "On the first oil change"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-2",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "A Pre-Owned Nissan VSC begins coverage:",
+                options: [
+                    "At zero miles",
+                    "On the original in-service date",
+                    "On the date of purchase and the odometer reading at that time",
+                    "Only after a 30-day/1,000-mile waiting period"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-3",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which VSC tier covers the MOST components?",
+                options: [
+                    "Silver Preferred",
+                    "Powertrain Preferred",
+                    "Gold Preferred",
+                    "Base Wrap"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-4",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "VSC Wrap adds how many additional components to the CPO limited warranty?",
+                options: [
+                    "About 400+",
+                    "About 1,000+",
+                    "About 1,690+",
+                    "About 2,500+"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-5",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "What deductible applies to a Certified Pre-Owned Wrap plan?",
+                options: [
+                    "$250",
+                    "$100",
+                    "$50",
+                    "$0"
+                ],
+                correctIndex: 3
+            },
+            {
+                id: "VSC-6",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which CPO Wrap term is available ONLY to Classes 1, 2, 3, and 6?",
+                options: [
+                    "7yr/100k miles",
+                    "7yr/Unlimited miles",
+                    "8yr/150k miles",
+                    "5yr/60k miles"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-7",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which surcharge may automatically apply when submitting a VSC?",
+                options: [
+                    "CVT transmission surcharge",
+                    "Turbocharger surcharge",
+                    "Navigation system surcharge",
+                    "Heated seats surcharge"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-8",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which of the following is NOT covered under VSC Wrap?",
+                options: [
+                    "ADAS",
+                    "Infotainment",
+                    "Suspension",
+                    "Aftermarket component failures"
+                ],
+                correctIndex: 3
+            },
+            {
+                id: "VSC-9",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which vehicles are eligible for a NEW Nissan VSC?",
+                options: [
+                    "Up to 9 prior model years, any mileage",
+                    "Vehicles still within the 3yr/36k basic warranty",
+                    "Vehicles up to 120,000 miles",
+                    "Any vehicle previously totaled"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-10",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which of the following makes a vehicle INELIGIBLE for a VSC?",
+                options: [
+                    "Regular maintenance gaps",
+                    "Ride-sharing use (UBER/LYFT)",
+                    "Commercial use by a landscaping company",
+                    "Having more than one prior owner"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-11",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which roadside assistance benefit applies to Security+Plus VSC?",
+                options: [
+                    "Up to $300 per tow",
+                    "Unlimited towing",
+                    "Towing to the nearest Nissan dealer up to $100",
+                    "No roadside benefits included"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-12",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which of the following reflects the MAXIMUM term for a NEW Nissan VSC?",
+                options: [
+                    "60/100k",
+                    "72/100k",
+                    "84/120k",
+                    "96/120k"
+                ],
+                correctIndex: 3
+            },
+            {
+                id: "VSC-13",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "What is the rental car benefit under a VSC?",
+                options: [
+                    "$30/day for 3 days",
+                    "$42/day for 5 days",
+                    "$60/day unlimited days",
+                    "Not included"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-14",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "A customer submits a cancellation request. The dealership may self-cancel ONLY if the refund is:",
+                options: [
+                    "Under $15,000",
+                    "Under $6,000",
+                    "Under $1,000",
+                    "Always dealer-cancelable"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-15",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "What is the Trip Interruption benefit under VSC?",
+                options: [
+                    "$100 per day, 2 days",
+                    "$250 total",
+                    "Up to $500 per incident",
+                    "Not included"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-16",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "VSC Wrap may be sold at the time of CPO sale or within how many days afterward?",
+                options: [
+                    "30",
+                    "60",
+                    "90",
+                    "180"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-17",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "When purchasing a NEW Nissan VSC after 12 months/12,000 miles, what happens?",
+                options: [
+                    "Contract is ineligible",
+                    "A surcharge automatically applies",
+                    "Only Powertrain Preferred is allowed",
+                    "Warranty starts over"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-18",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which plan offers the combined highest total component count—up to 2,320+ components?",
+                options: [
+                    "Powertrain Preferred",
+                    "Silver Preferred",
+                    "Gold Preferred",
+                    "CPO Limited Warranty only"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-19",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "A pre-owned vehicle with 85,000 miles can receive which type of plan?",
+                options: [
+                    "New VSC only",
+                    "Pre-Owned VSC within mileage band",
+                    "CPO Wrap only",
+                    "None"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-20",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Claims within the first 90 days/3,000 miles are subject to:",
+                options: [
+                    "Automatic approval",
+                    "Surcharge review",
+                    "Pre-existing condition review",
+                    "Mandatory inspection"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-21",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Towing and roadside assistance benefits under VSC Wrap are NOT available when:",
+                options: [
+                    "Vehicle is over 80,000 miles",
+                    "Customer has prior roadside claims",
+                    "Vehicle is sold by a California dealer",
+                    "Vehicle is a commercial unit"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-22",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which is required when selling a VSC on a vehicle outside the OEM powertrain warranty?",
+                options: [
+                    "A transmission flush",
+                    "A Vehicle Inspection Report (VIR)",
+                    "State emissions certification",
+                    "Warranty reinstatement"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-23",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "What is the component count of the Powertrain Preferred VSC?",
+                options: [
+                    "2,320+",
+                    "1,640+",
+                    "950+",
+                    "630+"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "VSC-24",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which statement about CPO Wrap eligibility is correct?",
+                options: [
+                    "Available for all Nissan models including GT-R",
+                    "Available only for Nissan Classes 1, 2, 3, and 6",
+                    "Available only for vehicles under 60k miles",
+                    "Can be sold anytime in the first 5 years"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "VSC-25",
+                categoryKey: "vsc_wrap",
+                categoryLabel: "VSC & Wraps",
+                question: "Which item is specifically excluded from coverage under all VSCs?",
+                options: [
+                    "ADAS",
+                    "Fuel system components",
+                    "Aftermarket parts and consequential damage they cause",
+                    "OEM electrical components"
+                ],
+                correctIndex: 2
+            }
+        ];
+
+        const PPM = [
+            {
+                id: "PPM-1",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "When must a NEW Nissan Scheduled Maintenance Plan be sold?",
+                options: [
+                    "Anytime before 60,000 miles",
+                    "Within the first 6 months and 7,500 miles of vehicle sale",
+                    "Before the first oil change",
+                    "Only at time of delivery"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-2",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "For EVs, when does coverage begin for Scheduled Maintenance plans?",
+                options: [
+                    "At zero miles",
+                    "On the manufacturer’s original warranty date",
+                    "At the odometer mileage on the purchase date",
+                    "After the first charge cycle"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-3",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which plan includes Tire Road Hazard Protection?",
+                options: [
+                    "Oil Change Only",
+                    "Basic",
+                    "Basic+Plus and Scheduled Plans",
+                    "EV Basic Only"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-4",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "What is included in Tire Road Hazard Protection?",
+                options: [
+                    "Replacement only",
+                    "Repair up to $35 and prorated replacement up to $250 per tire",
+                    "Unlimited tire replacement",
+                    "Coverage only on run-flats"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-5",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "In which states is Tire Road Hazard Protection NOT available for PPM?",
+                options: [
+                    "Texas only",
+                    "New York and Ohio",
+                    "Florida and California",
+                    "Washington and Oregon"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-6",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "What is the service interval used across all EV maintenance plans?",
+                options: [
+                    "3 months / 3,000 miles",
+                    "6 months / 7,500 miles",
+                    "12 months / 10,000 miles",
+                    "Every charge cycle"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-7",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "What is the deductible for all PPM plans?",
+                options: [
+                    "$50",
+                    "$100",
+                    "$0",
+                    "Varies by plan"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-8",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which service is included in ALL PPM plans when serviced at the selling dealer?",
+                options: [
+                    "167-point inspection",
+                    "Complimentary 10-point inspection",
+                    "Free detailing",
+                    "Brake pad replacement"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-9",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which of the following is included in Scheduled Plans but NOT Basic or Oil Change Only?",
+                options: [
+                    "Brake fluid replacement",
+                    "Tire rotations",
+                    "Engine air filter replacement",
+                    "In-cabin microfilter replacement"
+                ],
+                correctIndex: 0
+            },
+            {
+                id: "PPM-10",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which maintenance plan allows additive terms and can be sold anytime in the life of the vehicle?",
+                options: [
+                    "Scheduled Maintenance Plans only",
+                    "EV Carefree+",
+                    "Basic, Basic+Plus, and Oil Change Only (Bulk Oil Plans)",
+                    "CPO Wrap"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-11",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "How many oil changes and tire rotations are included per year in additive plans?",
+                options: [
+                    "1 oil change, 1 rotation",
+                    "2 oil changes, 2 rotations",
+                    "Unlimited",
+                    "Depends on mileage"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-12",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which vehicles are excluded from Promotional Oil & Filter Change plans?",
+                options: [
+                    "Non-Nissans",
+                    "Used vehicles over 80k miles",
+                    "GT-R, ARIYA, LEAF, NCV, Titan Diesel, Altima VC-Turbo",
+                    "Only EV models"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-13",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "What is the fixed retail price of the Promotional PMA plan?",
+                options: [
+                    "$199",
+                    "$339",
+                    "$499",
+                    "$599"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-14",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which EV inspection item is unique to EV maintenance plans?",
+                options: [
+                    "Engine air filter",
+                    "Charging port and charging cap",
+                    "Fuel system pressure test",
+                    "Exhaust system inspection"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-15",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Car Rental Assistance under Scheduled Maintenance Plans is available at which interval?",
+                options: [
+                    "Every visit",
+                    "Only at 15,000-mile intervals",
+                    "Every 30,000-mile interval",
+                    "Only within the first year"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-16",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which PPM plan level reimburses up to $85 for an oil & filter change?",
+                options: [
+                    "Level 1",
+                    "Level 2",
+                    "Level 3",
+                    "Level 4"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-17",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which plan interval combination is not available under Scheduled Maintenance plans?",
+                options: [
+                    "6 months / 6,000 miles",
+                    "6 months / 7,500 miles",
+                    "12 months / 10,000 miles",
+                    "24 months / 30,000 miles"
+                ],
+                correctIndex: 3
+            },
+            {
+                id: "PPM-18",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Under Scheduled Plans, which of the following services is included ONLY when applicable by drivetrain?",
+                options: [
+                    "Brake fluid",
+                    "Propeller shaft lubrication (4WD/AWD)",
+                    "Tire rotation",
+                    "In-cabin microfilter replacement"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-19",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "For Oil Change Only plans, which reimbursement level is available?",
+                options: [
+                    "$150 max",
+                    "$200 max",
+                    "$500 max",
+                    "Only $50 max"
+                ],
+                correctIndex: 0
+            },
+            {
+                id: "PPM-20",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which plans can EV Carefree+ Upsell be sold with?",
+                options: [
+                    "Any time during ownership",
+                    "Only at time of new EV sale",
+                    "Only after 12 months",
+                    "Only with CPO EV units"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-21",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Scheduled PPM plans follow:",
+                options: [
+                    "Dealer-recommended intervals",
+                    "Nissan Owner’s Manual recommended services",
+                    "Customer-selected items",
+                    "Roadside assistance requirements"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "PPM-22",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "What does Tire Road Hazard cover up to for replacement per tire?",
+                options: [
+                    "$100",
+                    "$150",
+                    "$250",
+                    "$500"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-23",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which of these is NOT included in the 10-point inspection?",
+                options: [
+                    "Fluid level check",
+                    "Wiper blade check",
+                    "CV boot inspection",
+                    "Brake pad replacement"
+                ],
+                correctIndex: 3
+            },
+            {
+                id: "PPM-24",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which EV plan term is included automatically with the purchase of a new MY23+ Nissan EV?",
+                options: [
+                    "12/12k",
+                    "24/24k",
+                    "EV Carefree+ 36/36k",
+                    "EV Carefree+ 60/75k"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "PPM-25",
+                categoryKey: "ppm",
+                categoryLabel: "PPM",
+                question: "Which statement about plan transferability is correct?",
+                options: [
+                    "Plans are non-transferable",
+                    "Plans transfer for free with no conditions",
+                    "Plans are transferable; a small fee may apply",
+                    "Only EV plans are transferable"
+                ],
+                correctIndex: 2
+            }
+        ];
+
+        const CPO_CERT = [
+            {
+                id: "CPO-1",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "To qualify for Nissan Certified Pre-Owned (CPO), a vehicle must be:",
+                options: [
+                    "Under 10 model years and under 100k miles",
+                    "Less than 6 years from original in-service date and under 80k miles",
+                    "Less than 8 years old with no mileage limit",
+                    "Only Nissan new-car trade-ins"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "CPO-2",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "How many inspection points are performed for a Nissan CPO vehicle?",
+                options: [
+                    "84-point inspection",
+                    "100-point inspection",
+                    "167-point digital vehicle inspection",
+                    "200-point inspection"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "CPO-3",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "What deductible applies to repairs under the CPO Limited Powertrain Warranty?",
+                options: [
+                    "$0",
+                    "$50",
+                    "$100 per visit",
+                    "$250 per claim"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "CPO-4",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "Adding a CPO Wrap plan does what to the deductible?",
+                options: [
+                    "Reduces it to $50",
+                    "Eliminates it (becomes $0)",
+                    "Increases it to $150",
+                    "Leaves it unchanged"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "CPO-5",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "The CPO Limited Warranty covers approximately how many components?",
+                options: [
+                    "300+",
+                    "630+",
+                    "1,200+",
+                    "2,320+"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "CPO-6",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "What is the maximum term available for a CPO Wrap plan?",
+                options: [
+                    "6 years / 100,000 miles",
+                    "7 years / 100,000 miles",
+                    "7 years / Unlimited miles (for eligible classes)",
+                    "10 years / 150,000 miles"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "CPO-7",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "Which Nissan vehicle classes are eligible for the 7-Year/Unlimited-Mile CPO Wrap?",
+                options: [
+                    "Classes 1–4",
+                    "Classes 1, 2, 3, and 6",
+                    "Only Class 1 and 2",
+                    "Classes 1–6"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "CPO-8",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "Certified Select vehicles must be:",
+                options: [
+                    "8 years old or newer and under 60k miles",
+                    "Out of powertrain warranty and up to previous 10 model years / under 100k miles",
+                    "Only Nissan badged models under 80k miles",
+                    "Any make/model regardless of age"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "CPO-9",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "Certified Select vehicles receive which inspection?",
+                options: [
+                    "167-point inspection",
+                    "100-point inspection",
+                    "84-point digital inspection",
+                    "50-point inspection"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "CPO-10",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "Certified Select Wrap adds coverage for which systems not covered by the base Select warranty?",
+                options: [
+                    "Only powertrain items",
+                    "ADAS, infotainment, AC/Heater, electrical, brakes, steering, suspension",
+                    "Only interior/exterior cosmetic items",
+                    "Only efficiency-related components"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "CPO-11",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "What deductible applies to Certified Select Wrap repairs?",
+                options: [
+                    "$0",
+                    "$50",
+                    "$100",
+                    "Depends on mileage"
+                ],
+                correctIndex: 0
+            },
+            {
+                id: "CPO-12",
+                categoryKey: "cpo_cert",
+                categoryLabel: "CPO & Certified Select",
+                question: "CPO Wrap plans must be sold:",
+                options: [
+                    "Only at time of CPO sale",
+                    "Anytime within the first 2 years",
+                    "At sale or within 90 days afterward",
+                    "Only after 1,000 miles have been driven"
+                ],
+                correctIndex: 2
+            }
+        ];
+
+        const GAP_ANC = [
+            {
+                id: "GAP-1",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "The primary purpose of GAP coverage is to:",
+                options: [
+                    "Pay for mechanical breakdowns",
+                    "Cover scheduled maintenance up to 100k miles",
+                    "Pay the difference between insurance settlement and loan payoff after a total loss",
+                    "Extend the vehicle’s powertrain warranty"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "GAP-2",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "GAP typically covers which of the following items?",
+                options: [
+                    "Negative equity rolled into the loan up to program limits",
+                    "Missed payments from the previous owner",
+                    "Dealer add-ons purchased after delivery",
+                    "Routine wear items"
+                ],
+                correctIndex: 0
+            },
+            {
+                id: "GAP-3",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "GAP does not cover:",
+                options: [
+                    "Insurance deductible (when applicable by program)",
+                    "Remaining unpaid loan balance from the total loss",
+                    "Late fees or missed scheduled payments",
+                    "The difference between ACV and loan payoff"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "GAP-4",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "Which type of vehicle is commonly ineligible or restricted for GAP?",
+                options: [
+                    "Passenger cars",
+                    "Luxury cars",
+                    "Commercial-use vehicles",
+                    "Certified Pre-Owned vehicles"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "GAP-5",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "Lease Excess Wear & Tear protection generally covers:",
+                options: [
+                    "Excess mileage only",
+                    "Wear charges up to the program’s per-item and total limits",
+                    "Mechanical failures during the lease",
+                    "Cosmetic items only"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "GAP-6",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "Paintless Dent Repair (PDR) typically covers:",
+                options: [
+                    "Dents and dings that do not damage paint",
+                    "Any body shop repair up to $500",
+                    "Chrome trim replacement",
+                    "Damaged panels requiring repainting"
+                ],
+                correctIndex: 0
+            },
+            {
+                id: "GAP-7",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "Tire & Wheel protection usually includes:",
+                options: [
+                    "Wear-related tire replacement",
+                    "Cosmetic wheel repair only",
+                    "Repair/replacement for road hazard damage such as nails, potholes, and debris",
+                    "Alignment services"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "GAP-8",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "Key Protection plans typically include:",
+                options: [
+                    "Only one replacement key per year",
+                    "Reprogramming, replacement, and locksmith services",
+                    "Coverage only if keys are physically damaged",
+                    "Key replacement only for mechanical keys"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "GAP-9",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "360Shield (or similar bundles) typically combine:",
+                options: [
+                    "Mechanical breakdown and EV charger support",
+                    "Theft recovery, windshield protection, interior/exterior protection, and road hazard coverages",
+                    "Only GAP and Tire protection",
+                    "PDR and Scheduled Maintenance benefits"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "GAP-10",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "Theft Protection (etching or tracking) benefits usually include:",
+                options: [
+                    "Paying for the full replacement vehicle",
+                    "Reimbursement or benefit payout if the vehicle is declared stolen and unrecovered",
+                    "Only paying for a new key",
+                    "A discount on insurance premiums"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "GAP-11",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "Cosmetic Wheel protection differs from full Tire & Wheel because it:",
+                options: [
+                    "Covers only cosmetic repairs like scuffs and scrapes",
+                    "Covers only damaged tires",
+                    "Includes mechanical failure protection",
+                    "Is included automatically with GAP"
+                ],
+                correctIndex: 0
+            },
+            {
+                id: "GAP-12",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "Windshield Protection (if included in a bundle) typically covers:",
+                options: [
+                    "Only replacement",
+                    "Unlimited replacements for any cause",
+                    "Repairs for chips and cracks caused by road debris",
+                    "Scratches caused by wipers"
+                ],
+                correctIndex: 2
+            },
+            {
+                id: "GAP-13",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "For most Ancillary products, when does coverage begin?",
+                options: [
+                    "On the in-service date at zero miles",
+                    "Immediately upon contract purchase",
+                    "After a 30-day waiting period",
+                    "Only after dealer submits proof of inspection"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "GAP-14",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "What is typically required for a customer to cancel an Ancillary product?",
+                options: [
+                    "A verbal request",
+                    "Written request including current mileage and submission to the selling dealer",
+                    "Calling the claims administrator directly",
+                    "Returning all receipts from prior repairs"
+                ],
+                correctIndex: 1
+            },
+            {
+                id: "GAP-15",
+                categoryKey: "gap_anc",
+                categoryLabel: "GAP & Ancillary",
+                question: "GAP benefits are triggered when:",
+                options: [
+                    "The vehicle suffers a mechanical failure",
+                    "Customer trades in the vehicle",
+                    "The insurer declares the vehicle a total loss or unrecovered theft",
+                    "The windshield cracks"
+                ],
+                correctIndex: 2
+            }
+        ];
+
+        QUESTION_BANK.push(...VSC_WRAP, ...PPM, ...CPO_CERT, ...GAP_ANC);
+
+        const menuEl = document.getElementById("menu");
+        const gameEl = document.getElementById("game");
+        const selectAllBtn = document.getElementById("selectAllBtn");
+        const startQuizBtn = document.getElementById("startQuizBtn");
+        const homeButtonNav = document.getElementById("homeButtonNav");
+
+        const categoryCheckboxes = Array.from(document.querySelectorAll(".category-item input[type='checkbox']"));
+
+        const questionNumberEl = document.getElementById("questionNumber");
+        const questionTextEl = document.getElementById("questionText");
+        const answerAreaEl = document.getElementById("answerArea");
+        const feedbackEl = document.getElementById("feedback");
+        const progressFillEl = document.getElementById("progressBarFill");
+        const progressTextEl = document.getElementById("progressText");
+        const scoreDisplayEl = document.getElementById("scoreDisplay");
+        const categoryLabelEl = document.getElementById("categoryLabel");
+
+        let activeCategories = [];
+        let quizQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let revealTimeout = null;
+
+        function showMenu() {
+            clearTimeout(revealTimeout);
+            gameEl.style.display = "none";
+            menuEl.style.display = "block";
+            feedbackEl.textContent = "";
+            answerAreaEl.innerHTML = "";
+            progressFillEl.style.width = "0%";
+            progressTextEl.textContent = "";
+            questionNumberEl.textContent = "";
+            categoryLabelEl.textContent = "";
+        }
+
+        function getSelectedCategories() {
+            return categoryCheckboxes
+                .filter(cb => cb.checked)
+                .map(cb => cb.dataset.cat);
+        }
+
+        function startQuiz() {
+            activeCategories = getSelectedCategories();
+            if (!activeCategories || activeCategories.length === 0) {
+                alert("Please select at least one product category first.");
+                return;
+            }
+
+            const pool = QUESTION_BANK.filter(q => activeCategories.includes(q.categoryKey));
+            if (pool.length === 0) {
+                alert("No questions available for the selected categories.");
+                return;
+            }
+
+            const shuffled = pool
+                .map(q => ({ q, r: Math.random() }))
+                .sort((a, b) => a.r - b.r)
+                .map(obj => obj.q);
+
+            const limit = Math.min(15, shuffled.length);
+            quizQuestions = shuffled.slice(0, limit);
+
+            currentIndex = 0;
+            score = 0;
+            scoreDisplayEl.textContent = "Score: 0";
+
+            menuEl.style.display = "none";
+            gameEl.style.display = "flex";
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = quizQuestions[currentIndex];
+            if (!q) {
+                showSummary();
+                return;
+            }
+
+            categoryLabelEl.textContent = q.categoryLabel;
+            questionNumberEl.textContent = "Question " + (currentIndex + 1) + " of " + quizQuestions.length;
+            questionTextEl.textContent = q.question;
+            feedbackEl.textContent = "";
+
+            const progress = (currentIndex / quizQuestions.length) * 100;
+            progressFillEl.style.width = progress.toFixed(0) + "%";
+            progressTextEl.textContent = "Progress: " + currentIndex + " / " + quizQuestions.length + " answered";
+
+            answerAreaEl.innerHTML = "";
+            const list = document.createElement("ul");
+            list.className = "options";
+            q.options.forEach((opt, index) => {
+                const li = document.createElement("li");
+                const btn = document.createElement("button");
+                btn.className = "option-button";
+                btn.textContent = opt;
+                btn.onclick = () => handleAnswer(index);
+                li.appendChild(btn);
+                list.appendChild(li);
+            });
+            answerAreaEl.appendChild(list);
+        }
+
+        function handleAnswer(selectedIndex) {
+            const q = quizQuestions[currentIndex];
+            const buttons = Array.from(document.querySelectorAll(".option-button"));
+
+            buttons.forEach(btn => {
+                btn.classList.add("disabled");
+                btn.disabled = true;
+            });
+
+            buttons[q.correctIndex].classList.add("correct");
+            if (selectedIndex !== q.correctIndex) {
+                buttons[selectedIndex].classList.add("incorrect");
+                feedbackEl.textContent = "Correct answer highlighted in green.";
+            } else {
+                score++;
+                scoreDisplayEl.textContent = "Score: " + score;
+                feedbackEl.textContent = "Correct!";
+            }
+
+            clearTimeout(revealTimeout);
+            revealTimeout = setTimeout(() => {
+                currentIndex++;
+                if (currentIndex >= quizQuestions.length) {
+                    showSummary();
+                } else {
+                    renderQuestion();
+                }
+            }, 2000);
+        }
+
+        function showSummary() {
+            const total = quizQuestions.length;
+            const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+
+            progressFillEl.style.width = "100%";
+            progressTextEl.textContent = "Progress: " + total + " / " + total + " answered";
+
+            questionNumberEl.textContent = "Quiz complete";
+            categoryLabelEl.textContent = "";
+
+            questionTextEl.textContent = "Nice work!";
+            answerAreaEl.innerHTML = "<p>You scored " + score + " out of " + total + " (" + percent + "%).</p><p>Use “Return to Home” to choose new categories and generate a fresh 15-question set.</p>";
+            feedbackEl.textContent = "";
+        }
+
+        selectAllBtn.addEventListener("click", () => {
+            categoryCheckboxes.forEach(cb => cb.checked = true);
+        });
+
+        startQuizBtn.addEventListener("click", startQuiz);
+        homeButtonNav.addEventListener("click", showMenu);
+
+        showMenu();
+    </script>
+</body>
+</html>
